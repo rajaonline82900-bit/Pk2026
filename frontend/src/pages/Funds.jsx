@@ -47,7 +47,7 @@ export default function Funds() {
   );
 }
 
-function buildUpiUrl({ upi_id, payee, amount, note, app = "" }) {
+function buildUpiUrl({ upi_id, payee, amount, note }) {
   const params = new URLSearchParams({
     pa: upi_id,
     pn: payee || "M11 CLUBE",
@@ -55,10 +55,6 @@ function buildUpiUrl({ upi_id, payee, amount, note, app = "" }) {
     cu: "INR",
     tn: note || "Deposit",
   });
-  if (app === "paytm") return `paytmmp://pay?${params.toString()}`;
-  if (app === "phonepe") return `phonepe://pay?${params.toString()}`;
-  if (app === "gpay") return `tez://upi/pay?${params.toString()}`;
-  if (app === "bhim") return `bhim://pay?${params.toString()}`;
   return `upi://pay?${params.toString()}`;
 }
 
@@ -66,6 +62,7 @@ function DepositForm({ settings, onDone }) {
   const [amount, setAmount] = useState("");
   const [utr, setUtr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [paid, setPaid] = useState(false);
   const upi = settings.upi_id || "m11clube@upi";
   const payee = settings.upi_payee_name || "M11 CLUBE";
   const min = settings.min_deposit || 100;
@@ -76,28 +73,29 @@ function DepositForm({ settings, onDone }) {
     toast.success(label);
   };
 
+  const payNow = () => {
+    if (num < min) { toast.error(`Min deposit ${min}`); return; }
+    const url = buildUpiUrl({ upi_id: upi, payee, amount: num, note: `Deposit-${num}` });
+    // Android wrapper (WebView) intercepts `upi://pay` and shows the native UPI app chooser.
+    // On desktop / non-supporting browsers this navigation will simply do nothing.
+    window.location.href = url;
+    setPaid(true);
+  };
+
   const submit = async () => {
     if (num < min) return toast.error(`Min deposit ${min}`);
-    if (!utr || utr.length < 6) return toast.error("Enter valid UTR / transaction ref");
+    if (!utr || utr.length < 6) return toast.error("Enter valid UTR / transaction reference");
     setLoading(true);
     try {
       await api.post("/wallet/deposit", { amount: num, utr, method: "upi" });
-      toast.success("Deposit request submitted. Wait for admin approval.");
-      setAmount(""); setUtr(""); onDone();
+      toast.success("Deposit request submitted. Funds credited after admin verification.");
+      setAmount(""); setUtr(""); setPaid(false); onDone();
     } catch (e) { toast.error(formatApiError(e)); } finally { setLoading(false); }
   };
 
-  const upiApps = [
-    { key: "phonepe", name: "PhonePe", color: "#5F259F" },
-    { key: "gpay", name: "GPay", color: "#1A73E8" },
-    { key: "paytm", name: "Paytm", color: "#00BAF2" },
-    { key: "bhim", name: "BHIM", color: "#FF7C00" },
-    { key: "", name: "Any UPI", color: "#0F172A" },
-  ];
-
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4" data-testid="deposit-form">
-      <Label className="text-xs uppercase tracking-wider text-slate-600">Quick Amount</Label>
+      <Label className="text-xs uppercase tracking-wider text-slate-600">Select Amount</Label>
       <div className="grid grid-cols-4 gap-2 mt-1.5 mb-3" data-testid="quick-amounts">
         {QUICK_AMOUNTS.map(a => (
           <button key={a} onClick={() => setAmount(String(a))} data-testid={`qa-${a}`}
@@ -107,36 +105,39 @@ function DepositForm({ settings, onDone }) {
         ))}
       </div>
 
-      <Label className="text-xs uppercase tracking-wider text-slate-600">Custom Amount</Label>
+      <Label className="text-xs uppercase tracking-wider text-slate-600">Or enter custom amount</Label>
       <div className="relative mt-1.5">
         <IndianRupee className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
-        <Input data-testid="deposit-amount" inputMode="numeric" value={amount} onChange={(e)=>setAmount(e.target.value.replace(/\D/g,""))} className="pl-9 h-11" placeholder={`Min ${min}`} />
+        <Input data-testid="deposit-amount" inputMode="numeric" value={amount} onChange={(e)=>{setAmount(e.target.value.replace(/\D/g,"")); setPaid(false);}} className="pl-9 h-11 text-base font-semibold" placeholder={`Minimum ${min}`} />
       </div>
 
-      {num >= min && (
-        <div className="bg-slate-900 text-white rounded-xl p-4 mt-4">
-          <div className="text-[11px] uppercase tracking-widest text-amber-300 font-semibold mb-2">Pay {num} via UPI</div>
-          <button onClick={() => copy(upi, "UPI ID copied")} data-testid="upi-id" className="font-display font-bold text-lg tracking-tight inline-flex items-center gap-2 hover:text-amber-300 transition">
-            {upi} <Copy className="w-3.5 h-3.5" />
-          </button>
-          <div className="text-[10px] text-white/60 mt-1 mb-3">Tap an app below to pay {num} pts directly</div>
-          <div className="grid grid-cols-5 gap-1.5" data-testid="upi-apps">
-            {upiApps.map(app => (
-              <a key={app.key || "any"} href={buildUpiUrl({ upi_id: upi, payee, amount: num, app: app.key, note: `Deposit-${num}` })}
-                data-testid={`upi-${app.key || "any"}`}
-                className="text-center bg-white/10 hover:bg-white/20 rounded-lg p-2 text-[10px] font-semibold transition">
-                <Smartphone className="w-4 h-4 mx-auto mb-1" />
-                {app.name}
-              </a>
-            ))}
-          </div>
+      {/* Pay via UPI: single button — Android wrapper intercepts upi:// and shows native app chooser */}
+      <Button
+        data-testid="pay-upi-btn"
+        onClick={payNow}
+        disabled={num < min}
+        className="w-full mt-4 h-12 btn-brand text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <Smartphone className="w-5 h-5 mr-2" /> Pay {num >= min ? `₹${num}` : ""} via UPI
+      </Button>
+      <div className="mt-2 text-[11px] text-slate-500 text-center">
+        Paying to <button onClick={() => copy(upi, "UPI ID copied")} className="font-semibold text-slate-700 inline-flex items-center gap-1 hover:text-[#FF7A00]" data-testid="upi-id">{upi} <Copy className="w-3 h-3" /></button>
+      </div>
+
+      {/* After payment, user submits UTR */}
+      {paid && (
+        <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3" data-testid="paid-banner">
+          <div className="text-xs text-emerald-900 mb-2 font-medium">After completing payment in your UPI app, paste the UTR / Transaction ID below.</div>
         </div>
       )}
 
-      <Label className="text-xs uppercase tracking-wider text-slate-600 mt-3 block">UTR / Reference (after payment)</Label>
-      <Input data-testid="deposit-utr" value={utr} onChange={(e)=>setUtr(e.target.value)} className="mt-1.5 h-11" placeholder="Transaction reference" />
-      <Button data-testid="deposit-submit" onClick={submit} disabled={loading} className="w-full mt-4 h-11 btn-brand"><Wallet className="w-4 h-4 mr-1.5" />{loading ? "Submitting…" : "Submit Deposit"}</Button>
-      <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">After payment in your UPI app, copy the UTR / Transaction ID and paste it above. Funds will be credited to your wallet after admin verification (usually under 30 min).</p>
+      <Label className="text-xs uppercase tracking-wider text-slate-600 mt-4 block">UTR / Transaction Reference</Label>
+      <Input data-testid="deposit-utr" value={utr} onChange={(e)=>setUtr(e.target.value)} className="mt-1.5 h-11" placeholder="12-digit UTR from your UPI app" />
+
+      <Button data-testid="deposit-submit" onClick={submit} disabled={loading || !utr} className="w-full mt-4 h-11 bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50">
+        <Wallet className="w-4 h-4 mr-1.5" /> {loading ? "Submitting…" : "Submit Deposit Request"}
+      </Button>
+      <p className="text-[10px] text-slate-400 mt-2 leading-relaxed text-center">Wallet credited after admin verification (usually under 30 min).</p>
     </div>
   );
 }
