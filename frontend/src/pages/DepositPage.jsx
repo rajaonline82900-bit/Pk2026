@@ -69,8 +69,18 @@ export default function DepositPage() {
           {loading ? "Creating order…" : `Proceed to Pay ${num >= min ? `₹${num}` : ""}`}
         </Button>
 
-        <div className="mt-3 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2.5 text-[11px] text-rose-900 leading-relaxed" data-testid="screenshot-warning-pre">
-          <strong>Zaroori:</strong> Har baar naya QR / scanner generate hota hai. Payment se pehle scanner ka <strong>screenshot zaroor lijiye</strong>. Payment hone par paise <strong>automatically wallet me</strong> add ho jayenge.
+        <div className="mt-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 border border-rose-200 p-3.5" data-testid="screenshot-warning-pre">
+          <div className="absolute -top-6 -right-6 w-16 h-16 bg-rose-200/30 rounded-full blur-xl" />
+          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-amber-200/40 rounded-full blur-xl" />
+          <div className="relative flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-200">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /></svg>
+            </div>
+            <div className="flex-1 text-[12.5px] text-slate-800 leading-relaxed" style={{ fontFamily: '"Noto Sans Devanagari", "DM Sans", system-ui, sans-serif' }}>
+              <div className="font-bold text-rose-700 tracking-tight mb-0.5">⚠️ ज़रूरी सूचना</div>
+              भुगतान करने के लिए <strong className="text-rose-700">हमेशा नया QR कोड जनरेट करें</strong>। स्कैनर का <strong>स्क्रीनशॉट लें</strong> और किसी भी ऐप का उपयोग करके भुगतान करें। भुगतान <strong className="text-emerald-700">स्वचालित रूप से आपके वॉलेट में जुड़ जाएगा</strong>।
+            </div>
+          </div>
         </div>
         <p className="text-[10px] text-slate-400 mt-2 leading-relaxed text-center">
           Powered by IMB Payment Gateway · Secure & auto-credit
@@ -179,10 +189,15 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
       ) : (
         <div className="flex-1 bg-white overflow-y-auto" data-testid="imb-waiting">
           {/* IMPORTANT screenshot warning */}
-          <div className="bg-rose-50 border-b-2 border-rose-300 px-4 py-3 flex items-start gap-2" data-testid="screenshot-warning">
-            <div className="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">!</div>
-            <div className="text-xs text-rose-900 leading-relaxed">
-              <strong>Important — Screenshot le lijiye:</strong> Har baar naya QR / scanner generate hota hai. Payment karne se pehle is scanner ka screenshot zaroor le lijiye. Payment hone par paise <strong>automatically wallet me add</strong> ho jayenge — koi UTR / receipt manually daalne ki zaroorat nahi.
+          <div className="px-4 pt-3 pb-3 bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 border-b-2 border-rose-200" data-testid="screenshot-warning">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-rose-200 animate-pulse">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" /></svg>
+              </div>
+              <div className="text-[12.5px] text-slate-800 leading-relaxed" style={{ fontFamily: '"Noto Sans Devanagari", "DM Sans", system-ui, sans-serif' }}>
+                <div className="font-bold text-rose-700 mb-0.5 tracking-tight">⚠️ ज़रूरी सूचना</div>
+                भुगतान करने के लिए <strong className="text-rose-700">हमेशा नया QR कोड जनरेट करें</strong>। स्कैनर का <strong>स्क्रीनशॉट लें</strong> और किसी भी ऐप का उपयोग करके भुगतान करें। भुगतान <strong className="text-emerald-700">स्वचालित रूप से आपके वॉलेट में जुड़ जाएगा</strong>।
+              </div>
             </div>
           </div>
 
