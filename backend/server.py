@@ -215,8 +215,14 @@ class SettingsIn(BaseModel):
     sms_method: Optional[str] = None
     sms_payload: Optional[str] = None
     sms_sender_id: Optional[str] = None
+    imb_user_token: Optional[str] = None
+    imb_base_url: Optional[str] = None
     posters: Optional[List[dict]] = None
     game_rates: Optional[dict] = None
+
+
+class IMBCreateOrderIn(BaseModel):
+    amount: int
 
 
 class TransactionApproveIn(BaseModel):
@@ -1138,6 +1144,138 @@ async def upi_intent(amount: int, user: dict = Depends(get_current_user)):
     from urllib.parse import quote
     href = f"upi://pay?pa={quote(upi_id)}&pn={quote(payee)}&am={amount}&cu=INR&tn={quote(note)}"
     return {"upi_url": href, "upi_id": upi_id, "payee": payee, "amount": amount, "note": note}
+
+
+# ---------- IMB Payment Gateway integration ----------
+@api.post("/wallet/deposit/imb-create")
+async def imb_create_order(payload: IMBCreateOrderIn, user: dict = Depends(get_current_user)):
+    """Create an order with IMB Payment Gateway. Returns payment_url + UPI deep links
+    that the frontend can use to launch the payment flow. Creates a `pending` deposit
+    transaction tagged with the IMB order_id; the webhook auto-credits the wallet on success."""
+    s = await db.settings.find_one({"key": "global"}) or {}
+    base = (s.get("imb_base_url") or "https://secure-stage.imb.org.in/").rstrip("/")
+    token = (s.get("imb_user_token") or "").strip()
+    if not token:
+        raise HTTPException(503, "Payment gateway not configured. Ask admin to set IMB API key.")
+    min_d = s.get("min_deposit", 100)
+    if payload.amount < min_d:
+        raise HTTPException(400, f"Minimum deposit is {min_d} points")
+
+    order_id = f"M11{int(datetime.now(timezone.utc).timestamp())}{uuid.uuid4().hex[:6].upper()}"
+    redirect_url = os.environ.get("PUBLIC_APP_URL", "https://m11clube.app") + "/funds?paid=1"
+    body = {
+        "customer_mobile": user.get("mobile") or "9999999999",
+        "user_token": token,
+        "amount": str(payload.amount),
+        "order_id": order_id,
+        "redirect_url": redirect_url,
+        "remark1": f"M11 Deposit - {user.get('name', '')}",
+        "remark2": f"user_id={user['id']}",
+    }
+    try:
+        async with _httpx.AsyncClient(timeout=20) as cli:
+            r = await cli.post(f"{base}/api/create-order", data=body)
+            data = r.json()
+    except Exception as e:
+        raise HTTPException(502, f"Payment gateway error: {e}")
+
+    if not data.get("status"):
+        raise HTTPException(400, data.get("message") or "Failed to create order")
+
+    result = data.get("result") or {}
+    # Persist pending transaction so webhook can credit later
+    tid = str(uuid.uuid4())
+    await db.transactions.insert_one({
+        "id": tid,
+        "user_id": user["id"],
+        "user_mobile": user.get("mobile"),
+        "user_name": user.get("name"),
+        "type": "deposit",
+        "amount": payload.amount,
+        "method": "imb",
+        "imb_order_id": order_id,
+        "imb_check_link": result.get("check_link"),
+        "imb_payment_url": result.get("payment_url"),
+        "status": "pending",
+        "note": "Awaiting IMB payment",
+        "created_at": now_iso(),
+    })
+    return {
+        "ok": True,
+        "transaction_id": tid,
+        "order_id": order_id,
+        "amount": payload.amount,
+        **result,
+    }
+
+
+@api.post("/wallet/deposit/imb-status")
+async def imb_check_status(body: dict, user: dict = Depends(get_current_user)):
+    order_id = body.get("order_id")
+    if not order_id:
+        raise HTTPException(400, "order_id required")
+    s = await db.settings.find_one({"key": "global"}) or {}
+    base = (s.get("imb_base_url") or "https://secure-stage.imb.org.in/").rstrip("/")
+    token = (s.get("imb_user_token") or "").strip()
+    if not token:
+        raise HTTPException(503, "Payment gateway not configured")
+    try:
+        async with _httpx.AsyncClient(timeout=10) as cli:
+            r = await cli.post(f"{base}/api/check-order-status", data={"user_token": token, "order_id": order_id})
+            data = r.json()
+    except Exception as e:
+        raise HTTPException(502, f"Status check failed: {e}")
+    status = (data.get("status") or "").upper()
+    # If completed and not yet credited, credit now
+    if status in ("COMPLETED", "SUCCESS") and (data.get("result") or {}).get("txnStatus") == "COMPLETED":
+        await _imb_credit_if_pending(order_id, data)
+    # Reflect updated wallet/status to caller
+    txn = await db.transactions.find_one({"imb_order_id": order_id})
+    if txn:
+        txn.pop("_id", None)
+    return {"gateway": data, "transaction": txn}
+
+
+async def _imb_credit_if_pending(order_id: str, gw_payload: dict):
+    """Idempotently credit the user wallet for a completed IMB order."""
+    t = await db.transactions.find_one({"imb_order_id": order_id})
+    if not t or t.get("status") != "pending":
+        return
+    amount = int(t["amount"])
+    await db.users.update_one({"id": t["user_id"]}, {"$inc": {"wallet_balance": amount}})
+    await db.transactions.update_one(
+        {"id": t["id"]},
+        {"$set": {"status": "approved", "note": "Auto-credited via IMB Payment Gateway", "imb_gateway_payload": gw_payload, "settled_at": now_iso()}},
+    )
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": t["user_id"],
+        "title": "Deposit successful",
+        "body": f"{amount} pts credited to your wallet.",
+        "created_at": now_iso(),
+    })
+
+
+@api.post("/webhooks/imb")
+async def imb_webhook(req: Request):
+    """IMB calls this on payment status update. Form-encoded payload as per docs."""
+    try:
+        form = await req.form()
+        payload = {k: form.get(k) for k in form.keys()}
+    except Exception:
+        try:
+            payload = await req.json()
+        except Exception:
+            raise HTTPException(400, "Invalid payload")
+    status = (payload.get("status") or "").upper()
+    order_id = payload.get("order_id")
+    if not order_id:
+        return {"ok": False, "message": "missing order_id"}
+    if status in ("SUCCESS", "TRUE"):
+        await _imb_credit_if_pending(order_id, payload)
+    elif status in ("FAILD", "FAIL", "FALSE", "FAILED"):
+        await db.transactions.update_one({"imb_order_id": order_id, "status": "pending"}, {"$set": {"status": "rejected", "note": "IMB reported failed payment", "imb_gateway_payload": payload}})
+    return {"ok": True}
 
 
 # ---------- Health ----------

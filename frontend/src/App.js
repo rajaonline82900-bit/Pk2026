@@ -16,6 +16,8 @@ import GameScreen from "./pages/GameScreen";
 import MyBids from "./pages/MyBids";
 import Passbook from "./pages/Passbook";
 import Funds from "./pages/Funds";
+import DepositPage from "./pages/DepositPage";
+import WithdrawPage from "./pages/WithdrawPage";
 import Notifications from "./pages/Notifications";
 import MPinPage from "./pages/MPinPage";
 import {
@@ -52,6 +54,8 @@ function App() {
             <Route path="/my-bids" element={<UserGuard><MyBids /></UserGuard>} />
             <Route path="/passbook" element={<UserGuard><Passbook /></UserGuard>} />
             <Route path="/funds" element={<UserGuard><Funds /></UserGuard>} />
+            <Route path="/deposit" element={<UserGuard><DepositPage /></UserGuard>} />
+            <Route path="/withdraw" element={<UserGuard><WithdrawPage /></UserGuard>} />
             <Route path="/notifications" element={<UserGuard><Notifications /></UserGuard>} />
             <Route path="/mpin" element={<UserGuard><MPinPage /></UserGuard>} />
             <Route path="/support" element={<UserGuard><SupportPage /></UserGuard>} />

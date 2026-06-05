@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/my-bids", icon: ListChecks, label: "My Bids" },
   { to: "/passbook", icon: BookOpen, label: "Passbook" },
-  { to: "/funds", icon: Wallet, label: "Funds" },
+  { to: "/deposit", icon: Wallet, label: "Funds" },
   { to: "/support", icon: Headphones, label: "Support" },
 ];
 
@@ -22,7 +22,8 @@ const DRAWER_ITEMS = [
   { to: "/mpin", icon: KeyRound, label: "Password" },
   { to: "/passbook", icon: BookOpen, label: "Passbook" },
   { to: "/support", icon: MessageCircle, label: "Live Chat" },
-  { to: "/funds", icon: Wallet, label: "Funds" },
+  { to: "/deposit", icon: Wallet, label: "Deposit" },
+  { to: "/withdraw", icon: Wallet, label: "Withdraw" },
   { to: "/notifications", icon: Bell, label: "Notifications" },
   { to: "/tutorials", icon: FileVideo, label: "Video Tutorials" },
   { to: "/notice", icon: ScrollText, label: "Notice Board" },
@@ -90,7 +91,7 @@ export default function MobileLayout({ children }) {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/funds" data-testid="header-wallet" className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition">
+            <Link to="/deposit" data-testid="header-wallet" className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition">
               <Wallet className="w-3.5 h-3.5 text-[#F5A623]" />
               <span className="text-sm font-semibold tabular-nums text-slate-900">{user?.wallet_balance ?? 0}</span>
             </Link>

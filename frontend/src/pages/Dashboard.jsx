@@ -97,8 +97,8 @@ function QuickIcons({ settings }) {
   const wa = (settings.whatsapp_number || "+919999999999").replace(/[^\d+]/g, "");
   const tg = settings.telegram_url || "https://t.me/m11clube";
   const items = [
-    { to: "/funds?tab=deposit", label: "Deposit", icon: ArrowDownToLine, color: "bg-emerald-500", testid: "quick-deposit" },
-    { to: "/funds?tab=withdraw", label: "Withdraw", icon: ArrowUpFromLine, color: "bg-rose-500", testid: "quick-withdraw" },
+    { to: "/deposit", label: "Deposit", icon: ArrowDownToLine, color: "bg-emerald-500", testid: "quick-deposit" },
+    { to: "/withdraw", label: "Withdraw", icon: ArrowUpFromLine, color: "bg-rose-500", testid: "quick-withdraw" },
     { href: tg, label: "Telegram", icon: Send, color: "bg-sky-500", testid: "quick-telegram" },
     { href: `https://wa.me/${wa.replace(/\D/g, "")}`, label: "WhatsApp", icon: WhatsAppGlyph, color: "bg-[#25D366]", testid: "quick-whatsapp" },
   ];
