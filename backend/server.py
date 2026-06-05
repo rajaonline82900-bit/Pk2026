@@ -536,6 +536,7 @@ async def admin_list_markets(_: dict = Depends(require_admin)):
 async def admin_create_market(payload: MarketIn, _: dict = Depends(require_admin)):
     doc = {"id": str(uuid.uuid4()), **payload.model_dump(), "open_result": None, "close_result": None, "result_date": None, "created_at": now_iso()}
     await db.markets.insert_one(doc)
+    doc.pop("_id", None)
     return doc
 
 

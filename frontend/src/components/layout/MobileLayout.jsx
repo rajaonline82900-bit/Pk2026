@@ -40,7 +40,7 @@ export default function MobileLayout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mobile-shell max-w-md mx-auto relative pb-20" data-testid="user-shell">
+    <div className="mobile-shell max-w-md mx-auto relative pb-24" data-testid="user-shell">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div className="flex items-center justify-between px-4 h-14">
@@ -107,8 +107,8 @@ export default function MobileLayout({ children }) {
       {/* Page content */}
       <main className="px-4 py-4" data-testid="page-content">{children}</main>
 
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto bg-white border-t border-slate-200" data-testid="bottom-nav">
+      {/* Bottom Nav (right-edge inset to clear the floating Made-with-Emergent badge) */}
+      <nav className="fixed bottom-0 left-0 z-[60] bg-white border-t border-slate-200 shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]" style={{ right: '180px', maxWidth: '28rem', marginLeft: 'auto', marginRight: 'auto' }} data-testid="bottom-nav">
         <div className="grid grid-cols-5">
           {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
