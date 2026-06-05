@@ -113,6 +113,8 @@ export default function GameScreen() {
     <MobileLayout>
       <Toaster richColors position="top-center" />
 
+      {/* Spacer so content isn't hidden by sticky bar */}
+      <div className={slip.length > 0 ? "pb-24" : ""}>
       <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4">
         <div className="text-[11px] uppercase tracking-widest text-slate-400">Market</div>
         <div className="font-display font-bold text-base text-slate-900">{market.name}</div>
@@ -192,9 +194,22 @@ export default function GameScreen() {
               </div>
             ))}
           </div>
-          <Button data-testid="submit-bids-btn" onClick={submitBids} disabled={submitting} className="w-full mt-4 h-11 bg-slate-900 hover:bg-slate-800 text-white">
-            {submitting ? "Placing…" : `Place ${slip.length} Bids · ${total} pts`}
-          </Button>
+        </div>
+      )}
+      </div>
+
+      {/* Sticky bottom Place Bids bar (always visible when slip has items) */}
+      {slip.length > 0 && (
+        <div className="fixed left-0 right-0 bottom-14 z-50 max-w-md mx-auto px-4 pb-2 pointer-events-none" data-testid="sticky-place-bids">
+          <div className="bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/40 p-3 flex items-center justify-between gap-3 pointer-events-auto">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-amber-300 font-semibold">Total ({slip.length} bids)</div>
+              <div className="font-display font-bold text-xl tabular-nums" data-testid="sticky-total">{total} pts</div>
+            </div>
+            <Button data-testid="submit-bids-btn" onClick={submitBids} disabled={submitting} className="btn-brand h-11 px-6 font-semibold">
+              {submitting ? "Placing…" : `Place ${slip.length} ${slip.length === 1 ? "Bid" : "Bids"}`}
+            </Button>
+          </div>
         </div>
       )}
     </MobileLayout>

@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import MobileLayout from "../components/layout/MobileLayout";
 import { api } from "../lib/api";
+import { Link } from "react-router-dom";
 import { MessageCircle, Phone, ShieldCheck, FileVideo, Megaphone, BarChart3, Lightbulb, Share2, Settings as SettingsIcon, Headphones } from "lucide-react";
+import { useI18n, LANGS } from "../lib/i18n";
+
+const LANG_OPTIONS = LANGS;
+const useI18nFromCtx = () => useI18n();
 
 export function SupportPage() {
   const [settings, setSettings] = useState({});
@@ -133,12 +138,38 @@ export function IdeaPage() {
 }
 
 export function SettingsPage() {
+  return <SettingsPageImpl />;
+}
+
+function SettingsPageImpl() {
+  const { lang, setLang } = useI18nFromCtx();
   return (
     <MobileLayout>
       <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900 mb-3">Settings</h1>
+      <div className="bg-white border border-slate-200 rounded-xl p-4 mb-3" data-testid="language-section">
+        <div className="font-display font-semibold text-slate-900 mb-1">Language / भाषा</div>
+        <p className="text-xs text-slate-500 mb-3">Select your preferred language for the app interface.</p>
+        <div className="grid grid-cols-2 gap-2">
+          {LANG_OPTIONS.map(opt => (
+            <button key={opt.code} onClick={() => setLang(opt.code)} data-testid={`lang-${opt.code}`}
+              className={`text-sm font-medium py-3 rounded-lg border transition ${lang === opt.code ? "bg-[#FF7A00] text-white border-[#FF7A00]" : "bg-white text-slate-800 border-slate-200 hover:border-[#FF7A00]"}`}>
+              <div className="text-base">{opt.native}</div>
+              <div className="text-[10px] uppercase tracking-widest opacity-70 mt-0.5">{opt.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl p-4 mb-3">
+        <Link to="/mpin" className="block">
+          <div className="font-display font-semibold text-slate-900">Change Password</div>
+          <p className="text-xs text-slate-500 mt-0.5">Update your account password</p>
+        </Link>
+      </div>
+
       <div className="bg-white border border-slate-200 rounded-xl p-4">
         <SettingsIcon className="w-6 h-6 text-slate-500 mb-2" />
-        <div className="text-sm text-slate-700">More preferences coming soon. For MPIN changes use the MPIN Management screen.</div>
+        <div className="text-sm text-slate-700">More preferences coming soon.</div>
       </div>
     </MobileLayout>
   );

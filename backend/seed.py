@@ -60,7 +60,8 @@ async def seed_all(db):
             "id": str(uuid.uuid4()),
             "mobile": test_mobile,
             "name": "Test User",
-            "mpin_hash": hash_password("1234"),
+            "password_hash": hash_password("1234"),
+            "mpin_hash": hash_password("1234"),  # legacy compat
             "role": "user",
             "wallet_balance": 1000,
             "status": "active",
@@ -68,6 +69,8 @@ async def seed_all(db):
         })
     elif not existing_user.get("id"):
         await db.users.update_one({"mobile": test_mobile}, {"$set": {"id": str(uuid.uuid4())}})
+    if existing_user and not existing_user.get("password_hash") and existing_user.get("mpin_hash"):
+        await db.users.update_one({"mobile": test_mobile}, {"$set": {"password_hash": existing_user["mpin_hash"]}})
 
     # ----- Markets -----
     for m in DEFAULT_MARKETS:
@@ -90,15 +93,22 @@ async def seed_all(db):
         await db.settings.insert_one({
             "key": "global",
             "whatsapp_number": "+919999999999",
+            "whatsapp_country_code": "+91",
             "telegram_url": "https://t.me/m11clube",
             "notice_text": "Welcome to M11 CLUBE — India's most trusted online Matka platform. Play responsibly. Min deposit 100. 24/7 support available on WhatsApp.",
             "upi_id": "m11clube@upi",
+            "upi_payee_name": "M11 CLUBE",
             "qr_code_url": "",
             "min_deposit": 100,
             "min_withdraw": 500,
             "withdraw_open_time": "08:00",
             "withdraw_close_time": "20:00",
             "result_api_url": "",
+            "sms_api_url": "",
+            "sms_api_key": "",
+            "sms_method": "GET",
+            "sms_payload": "mobile={mobile}&message={message}&sender={sender}&apikey={api_key}",
+            "sms_sender_id": "M11CLB",
             "posters": [
                 {"image_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=70&auto=format&fit=crop", "link": ""},
                 {"image_url": "https://images.unsplash.com/photo-1517242810446-cc8951b2be40?w=800&q=70&auto=format&fit=crop", "link": ""},
@@ -107,13 +117,19 @@ async def seed_all(db):
             "game_rates": default_game_rates(),
         })
     else:
-        # Backfill any new fields without overwriting existing values
         patch = {}
         for k, v in [
             ("telegram_url", "https://t.me/m11clube"),
             ("withdraw_open_time", "08:00"),
             ("withdraw_close_time", "20:00"),
             ("result_api_url", ""),
+            ("whatsapp_country_code", "+91"),
+            ("upi_payee_name", "M11 CLUBE"),
+            ("sms_api_url", ""),
+            ("sms_api_key", ""),
+            ("sms_method", "GET"),
+            ("sms_payload", "mobile={mobile}&message={message}&sender={sender}&apikey={api_key}"),
+            ("sms_sender_id", "M11CLB"),
             ("posters", [
                 {"image_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=70&auto=format&fit=crop", "link": ""},
                 {"image_url": "https://images.unsplash.com/photo-1517242810446-cc8951b2be40?w=800&q=70&auto=format&fit=crop", "link": ""},

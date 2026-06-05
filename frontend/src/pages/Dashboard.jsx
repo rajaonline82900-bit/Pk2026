@@ -3,11 +3,15 @@ import { Link } from "react-router-dom";
 import MobileLayout from "../components/layout/MobileLayout";
 import { api } from "../lib/api";
 import {
-  Crown, Sparkles, Megaphone, TrendingUp,
-  ArrowDownToLine, ArrowUpFromLine, Send, MessageCircle
+  Megaphone, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Send,
 } from "lucide-react";
 
-function timeStr(t) { return t || "--:--"; }
+const WhatsAppGlyph = (props) => (
+  <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" {...props}>
+    <path d="M19.11 17.46c-.3-.15-1.78-.88-2.06-.98-.28-.1-.48-.15-.68.15s-.78.98-.95 1.18c-.18.2-.35.22-.65.07-.3-.15-1.28-.47-2.43-1.5-.9-.8-1.5-1.78-1.68-2.08-.18-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.07-.15-.68-1.65-.94-2.26-.25-.6-.5-.52-.68-.53l-.58-.01c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.55s1.1 2.96 1.25 3.16c.15.2 2.17 3.31 5.26 4.65.74.32 1.31.51 1.76.66.74.24 1.41.21 1.94.13.59-.09 1.78-.73 2.04-1.43.25-.7.25-1.3.18-1.43-.07-.13-.27-.2-.57-.35zm-5.39 7.34h-.01c-1.83 0-3.62-.49-5.18-1.42l-.37-.22-3.85 1.01 1.03-3.75-.24-.39A10.66 10.66 0 1 1 24.4 8.36 10.6 10.6 0 0 1 13.72 24.8zm9.06-19.74A12.92 12.92 0 0 0 13.72 1.92 12.94 12.94 0 0 0 2.4 21.07L.51 28.08l7.17-1.88a12.91 12.91 0 0 0 6.04 1.54h.01a12.94 12.94 0 0 0 12.93-12.94c0-3.45-1.34-6.7-3.78-9.14z" />
+  </svg>
+);
+
 function format12(t) {
   if (!t) return "--";
   const [h, m] = t.split(":").map(Number);
@@ -29,31 +33,13 @@ export default function Dashboard() {
 
   return (
     <MobileLayout>
-      {/* Posters carousel */}
       <PosterCarousel posters={settings.posters || []} />
-
-      {/* Quick action round icons */}
       <QuickIcons settings={settings} />
 
-      {/* Notice marquee */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl py-2 overflow-hidden mb-3" data-testid="scrolling-notice">
+      <div className="bg-amber-50 border border-amber-200 rounded-xl py-2 overflow-hidden mb-4" data-testid="scrolling-notice">
         <div className="marquee-track text-sm text-amber-900 font-medium px-2">
           <Megaphone className="inline w-3.5 h-3.5 mr-2 -mt-0.5" />
           {settings.notice_text || "Welcome to M11 CLUBE"}
-        </div>
-      </div>
-
-      {/* Quick games */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-4" data-testid="quick-king-starline">
-          <div className="flex items-center gap-2 text-amber-700"><Crown className="w-4 h-4" /><span className="text-[11px] uppercase tracking-widest font-semibold">King Starline</span></div>
-          <div className="mt-2 font-display text-base font-semibold text-slate-900 leading-tight">Hourly Markets</div>
-          <div className="text-xs text-slate-500 mt-0.5">Coming soon</div>
-        </div>
-        <div className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 text-white p-4" data-testid="quick-king-jackpot">
-          <div className="flex items-center gap-2 text-amber-300"><Sparkles className="w-4 h-4" /><span className="text-[11px] uppercase tracking-widest font-semibold">King Jackpot</span></div>
-          <div className="mt-2 font-display text-base font-semibold leading-tight">Mega Prizes</div>
-          <div className="text-xs text-white/70 mt-0.5">Coming soon</div>
         </div>
       </div>
 
@@ -99,7 +85,7 @@ function PosterCarousel({ posters }) {
       {list.length > 1 && (
         <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
           {list.map((_, i) => (
-            <button key={i} onClick={() => setIdx(i)} className={`w-2 h-2 rounded-full transition ${i === idx ? "bg-white w-6" : "bg-white/50"}`} />
+            <button key={i} onClick={() => setIdx(i)} className={`h-2 rounded-full transition-all ${i === idx ? "bg-white w-6" : "bg-white/60 w-2"}`} />
           ))}
         </div>
       )}
@@ -108,13 +94,13 @@ function PosterCarousel({ posters }) {
 }
 
 function QuickIcons({ settings }) {
-  const wa = (settings.whatsapp_number || "+919999999999").replace(/\D/g, "");
+  const wa = (settings.whatsapp_number || "+919999999999").replace(/[^\d+]/g, "");
   const tg = settings.telegram_url || "https://t.me/m11clube";
   const items = [
-    { to: "/funds", label: "Deposit", icon: ArrowDownToLine, color: "bg-emerald-500", testid: "quick-deposit" },
-    { to: "/funds", label: "Withdraw", icon: ArrowUpFromLine, color: "bg-rose-500", testid: "quick-withdraw" },
+    { to: "/funds?tab=deposit", label: "Deposit", icon: ArrowDownToLine, color: "bg-emerald-500", testid: "quick-deposit" },
+    { to: "/funds?tab=withdraw", label: "Withdraw", icon: ArrowUpFromLine, color: "bg-rose-500", testid: "quick-withdraw" },
     { href: tg, label: "Telegram", icon: Send, color: "bg-sky-500", testid: "quick-telegram" },
-    { href: `https://wa.me/${wa}`, label: "WhatsApp", icon: MessageCircle, color: "bg-emerald-600", testid: "quick-whatsapp" },
+    { href: `https://wa.me/${wa.replace(/\D/g, "")}`, label: "WhatsApp", icon: WhatsAppGlyph, color: "bg-[#25D366]", testid: "quick-whatsapp" },
   ];
   return (
     <div className="grid grid-cols-4 gap-2 mb-3" data-testid="quick-icons">
@@ -157,7 +143,7 @@ function MarketCard({ m }) {
 
       <div className="flex items-center justify-between gap-3">
         <div className="text-[11px] uppercase tracking-widest text-slate-400">
-          Open: <span className="text-slate-700 font-medium">{timeStr(m.open_time)}</span> · Close: <span className="text-slate-700 font-medium">{timeStr(m.close_time)}</span>
+          Open: <span className="text-slate-700 font-medium">{m.open_time}</span> · Close: <span className="text-slate-700 font-medium">{m.close_time}</span>
         </div>
         {playable ? (
           <span data-testid={`play-btn-${m.id}`} className="btn-brand px-4 py-2 rounded-lg text-sm">Play Game</span>

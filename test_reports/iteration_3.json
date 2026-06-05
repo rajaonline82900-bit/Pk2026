@@ -1,0 +1,52 @@
+{
+  "summary": "Phase-3 backend + frontend smoke testing. Backend: ALL 32 legacy pytest still pass + 17 new Phase-3 tests pass (49/49 = 100%). Verified: (a) /auth/login & /auth/register accept both legacy {mpin} and new {password}, (b) JWT exp ~365 days (well above 11-month threshold), (c) /auth/forgot-otp in demo mode returns {ok, otp_id, demo_otp} when sms_api_url is empty, (d) /auth/reset-password verifies OTP, resets pw, returns new token, and OTP cannot be reused, (e) POST /admin/upload + GET /api/files/{id} round-trip stores/returns data_url, (f) /wallet/upi-intent generates a upi://pay?pa=...&am=...&cu=INR URL with merchant info, (g) /settings exposes whatsapp_country_code, upi_payee_name, sms_api_url/key/method/sender/payload. Frontend smoke (real browser, prod URL): /login shows Mobile + Password + Eye toggle + Forgot link, no demo placeholders. /register has only 3 inputs (Name/Mobile/Password), no confirm field. /forgot-password loads. Dashboard: King Starline & King Jackpot tiles GONE; WhatsApp/Telegram/Deposit/Withdraw quick icons present. Quick-deposit navigates to /funds?tab=deposit. Funds Deposit shows all 7 qa-* chips (100/200/500/1000/10000/20000/50000); clicking 500 reveals all 5 UPI app intent links (upi-phonepe/gpay/paytm/bhim/any). /settings has 4 lang buttons (lang-en/hi/pa/ur); switching to Hindi inserts Devanagari chars into the page. /admin/settings has all required sections present visually: SMS/OTP Provider (SMS API URL, SMS API KEY, SMS Method, Sender ID, SMS Payload Template), WhatsApp country code, UPI Payee Name, Telegram URL, Withdrawal time window, Result API URL.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/login", "issue": "Accepts both {mpin} and {password} as designed; OK. Empty password returns 422 ('password is required') instead of 400 — minor, schema-driven."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminSettings SMS/OTP Provider section", "issue": "All SMS provider inputs are missing the spec-mandated data-testid attributes: sms-url, sms-key, sms-method, sms-sender, sms-payload (count=0 each). The fields are functional but cannot be reliably targeted by automation.", "selector": "[data-testid='sms-url'] etc", "priority": "MEDIUM"},
+      {"component": "AdminSettings Home Posters", "issue": "Spec required FILE UPLOAD inputs with data-testid='poster-file-{i}' and image preview, but the rendered UI only shows URL TEXT inputs for image_url + link (no <input type='file'> visible, no poster-file-0/1/2 testid found). Base64 file-upload backend (/admin/upload + /api/files/{id}) IS working (verified by pytest), but the Admin UI does not appear to wire a file picker to it.", "selector": "[data-testid='poster-file-0']", "priority": "HIGH"},
+      {"component": "Funds page UPI intent links", "issue": "Only the 'Any UPI' link uses the upi:// scheme. The PhonePe/GPay/Paytm/BHIM hrefs use vendor deep-link schemes (phonepe://, tez://, paytmmp://, bhim://) — this is acceptable per spec (different UPI apps register distinct schemes) but worth confirming on a real Android device. All 5 anchors are present with correct data-testid values."}
+    ],
+    "integration_issues": [
+      {"flow": "GameScreen sticky-place-bids bar", "issue": "Bar element with data-testid='sticky-place-bids' was not present in DOM during automation (count=0). Per spec this is conditional ('appears only when slip has items'), so the absence-when-empty is correct. We could not programmatically add a bid to the slip (the digit/amount/Add interactions did not register an item) to confirm visibility-when-items-exist. Manual verification recommended.", "affected_selectors": ["[data-testid='sticky-place-bids']"]}
+    ],
+    "design_issues": [
+      {"screen": "Login/Register pages", "issues": ["The literal string 'MPIN'/'mpin' still appears somewhere in the HTML on /login and /register (likely a residual label or hidden helper text). The visible fields are correct (Mobile + Password) but legacy 'MPIN' text should be cleaned out to match the new password UX."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_phase2.py",
+    "/app/backend/tests/test_phase3.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "AdminSettings.jsx: Add data-testid attributes to SMS inputs (sms-url, sms-key, sms-method, sms-sender, sms-payload) so automation/QA can target them. Also recommended: wa-country, upi-payee, tg-url, wd-open, wd-close, result-api.",
+    "AdminSettings.jsx Home Posters: Wire FILE UPLOAD <input type='file' data-testid='poster-file-0/1/2'/> + image preview that converts to base64 and POSTs to /api/admin/upload (already working backend). Right now only URL text inputs are shown in production build, contradicting the Phase-3 spec.",
+    "Login.jsx/Register.jsx: Remove residual 'MPIN' literal strings from JSX (the visible inputs are correct but legacy MPIN text remains somewhere in DOM/source).",
+    "(Manual) Verify sticky-place-bids bar shows total + count when slip has items on /market/{id}/game/{key} — could not be reproduced programmatically; conditional rendering when slip is empty is correct."
+  ],
+  "critical_code_review_comments": [
+    "server.py /auth/login: graceful auto-migration writes password_hash from mpin_hash on successful login — good. Consider also clearing mpin_hash once migrated to avoid stale legacy values.",
+    "server.py forgot-otp/reset-password: OTPs are bcrypt-hashed (good); however otp_id is returned in plaintext and a brute-forcer could try all 10^6 OTPs against a known otp_id (no attempt counter). Add a tries-counter and lock the OTP record after 5 wrong attempts.",
+    "server.py /admin/upload: cap at ~3MB is good, but no MIME-type sniffing — anyone with admin token can store any base64 blob in db.files (incl. JS). Validate that data_url starts with 'data:image/(png|jpe?g|webp);base64,' before storing.",
+    "JWT_TTL_HOURS = 24*365 effectively makes sessions never expire. Combined with no token-revocation mechanism, a stolen token is valid for a year. Acceptable for the UX requirement but worth noting.",
+    "Login.jsx/Register.jsx 'MPIN' literal in HTML (per smoke test) suggests dead UI strings — clean up to match the new password UX.",
+    "AdminSettings.jsx posters: file-upload functionality is the headline Phase-3 feature but appears not wired in the rendered UI. Re-deploy/rebuild?"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase3.py (NEW — 17 tests: login compat both fields, register password-only with auto-login token, JWT TTL ~1yr, forgot-otp demo mode + 404, reset-password full flow + OTP reuse rejection, /admin/upload + /files/{id} round-trip, UPI intent URL builder, settings new keys, admin SMS provider update)"
+  ],
+  "success_rate": {"backend": "100% (49/49 pytest)", "frontend": "~90% — all critical Phase-3 elements verified except admin SMS data-testids and poster file-upload widget (missing in UI)"},
+  "test_credentials": "Admin: admin@m11clube.com / admin123 | User: 9999999999 / 1234",
+  "seed_data_creation": "Phase-3 tests upload a 1x1 PNG to db.files (prefix 'TEST_pixel.png'); also creates TEST_P3 users via /auth/register with random mobile. Resets test-user password to '1234' at end of reset-password test. SMS provider settings briefly toggled then cleared back to empty (demo mode).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/ -v` — expect 49 passing (32 legacy + 17 Phase-3). The Phase-3 file is /app/backend/tests/test_phase3.py. Key things to re-check after main agent fixes: (1) AdminSettings.jsx should expose data-testid=sms-url/sms-key/sms-method/sms-sender/sms-payload, (2) Home Posters should have <input type='file' data-testid='poster-file-{i}'/> with preview, (3) sticky-place-bids bar appears when slip has items (manual). Forgot-password backend flow is solid — use demo_otp from response when sms_api_url/sms_api_key are empty.",
+  "rca_of_the_issue": "Two clear gaps between spec and rendered UI: (a) admin SMS provider inputs lack data-testid attributes — likely just an oversight in AdminSettings.jsx field props, (b) poster FILE UPLOAD widget is missing from the rendered admin settings page even though the backend /admin/upload + /files/{id} endpoints are in place and pytest-verified — could be: AdminSettings.jsx wasn't rebuilt, the file-upload JSX block is conditionally hidden, or the new code path was committed but the legacy URL-input row is the only one shown. Recommend grep'ing AdminSettings.jsx for `type=\"file\"` and `poster-file-` to confirm."
+}

@@ -19,7 +19,7 @@ const NAV_ITEMS = [
 const DRAWER_ITEMS = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/my-bids", icon: ListChecks, label: "My Bids" },
-  { to: "/mpin", icon: KeyRound, label: "MPIN Management" },
+  { to: "/mpin", icon: KeyRound, label: "Password" },
   { to: "/passbook", icon: BookOpen, label: "Passbook" },
   { to: "/support", icon: MessageCircle, label: "Live Chat" },
   { to: "/funds", icon: Wallet, label: "Funds" },

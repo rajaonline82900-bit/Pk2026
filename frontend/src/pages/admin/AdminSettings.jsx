@@ -53,23 +53,39 @@ export default function AdminSettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Contact & Payment">
-          <Field label="WhatsApp Number" value={s.whatsapp_number || ""} onSave={(v)=>save({ whatsapp_number: v })} testid="whatsapp" />
-          <Field label="Telegram URL" value={s.telegram_url || ""} onSave={(v)=>save({ telegram_url: v })} testid="telegram" />
-          <Field label="UPI ID" value={s.upi_id || ""} onSave={(v)=>save({ upi_id: v })} testid="upi" />
+          <Field label="WhatsApp Country Code" value={s.whatsapp_country_code || "+91"} onSave={(v)=>save({ whatsapp_country_code: v })} testid="wa-cc" />
+          <Field label="WhatsApp Number (with country code)" value={s.whatsapp_number || ""} onSave={(v)=>save({ whatsapp_number: v })} testid="whatsapp" />
+          <Field label="Telegram Channel URL" value={s.telegram_url || ""} onSave={(v)=>save({ telegram_url: v })} testid="telegram" />
+          <Field label="UPI ID (merchant)" value={s.upi_id || ""} onSave={(v)=>save({ upi_id: v })} testid="upi" />
+          <Field label="UPI Payee Name" value={s.upi_payee_name || ""} onSave={(v)=>save({ upi_payee_name: v })} testid="upi-payee" />
           <Field label="QR Code Image URL" value={s.qr_code_url || ""} onSave={(v)=>save({ qr_code_url: v })} testid="qr" />
           <Field label="Min Deposit (points)" type="number" value={s.min_deposit ?? 100} onSave={(v)=>save({ min_deposit: parseInt(v) })} testid="min-dep" />
           <Field label="Min Withdraw (points)" type="number" value={s.min_withdraw ?? 500} onSave={(v)=>save({ min_withdraw: parseInt(v) })} testid="min-wd" />
         </Card>
 
         <Card title="Withdrawal Time Window (IST)">
-          <p className="text-xs text-slate-500 mb-3">Users can only request withdrawals between these times. Set same value (e.g. 00:00 / 23:59) to keep it always open.</p>
+          <p className="text-xs text-slate-500 mb-3">Users can only request withdrawals between these times. Set 00:00 / 23:59 to keep it always open.</p>
           <Field label="Open Time (HH:MM)" value={s.withdraw_open_time || "00:00"} onSave={(v)=>save({ withdraw_open_time: v })} testid="wd-open" />
           <Field label="Close Time (HH:MM)" value={s.withdraw_close_time || "23:59"} onSave={(v)=>save({ withdraw_close_time: v })} testid="wd-close" />
 
           <div className="border-t border-slate-100 mt-5 pt-4">
             <div className="font-display font-semibold text-slate-900 mb-1">Auto Result API</div>
-            <p className="text-xs text-slate-500 mb-3">Optional. Provide a webhook URL that returns today's market results. Once configured, the Fetch button on Results page will hit it.</p>
+            <p className="text-xs text-slate-500 mb-3">Optional. Provide a webhook URL that returns today's market results. The Fetch button on Results page will hit it.</p>
             <Field label="Result API URL" value={s.result_api_url || ""} onSave={(v)=>save({ result_api_url: v })} testid="result-api" />
+          </div>
+
+          <div className="border-t border-slate-100 mt-5 pt-4">
+            <div className="font-display font-semibold text-slate-900 mb-1">SMS / OTP Provider</div>
+            <p className="text-xs text-slate-500 mb-3">Wire your own SMS gateway (MSG91 / Fast2SMS / Twilio etc.). Placeholders supported in payload: <code className="bg-slate-100 px-1 rounded">{`{mobile}`}</code> <code className="bg-slate-100 px-1 rounded">{`{message}`}</code> <code className="bg-slate-100 px-1 rounded">{`{api_key}`}</code> <code className="bg-slate-100 px-1 rounded">{`{sender}`}</code>. Leave empty to use demo mode (OTP shown in app).</p>
+            <Field label="SMS API URL" value={s.sms_api_url || ""} onSave={(v)=>save({ sms_api_url: v })} testid="sms-url" />
+            <Field label="SMS API Key" value={s.sms_api_key || ""} onSave={(v)=>save({ sms_api_key: v })} testid="sms-key" />
+            <Field label="SMS Method (GET/POST)" value={s.sms_method || "GET"} onSave={(v)=>save({ sms_method: v.toUpperCase() })} testid="sms-method" />
+            <Field label="Sender ID" value={s.sms_sender_id || ""} onSave={(v)=>save({ sms_sender_id: v })} testid="sms-sender" />
+            <div className="mb-3">
+              <Label className="text-xs uppercase tracking-wider text-slate-600">SMS Payload Template</Label>
+              <Textarea data-testid="set-sms-payload" rows={2} value={s.sms_payload || ""} onChange={(e)=>setS({...s, sms_payload: e.target.value})} className="mt-1.5 font-mono text-xs" />
+              <Button data-testid="save-sms-payload" onClick={()=>save({ sms_payload: s.sms_payload })} className="btn-brand h-9 mt-2 text-sm">Save Payload</Button>
+            </div>
           </div>
         </Card>
 

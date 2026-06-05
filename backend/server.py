@@ -37,7 +37,7 @@ from seed import seed_all
 # ---------- Config ----------
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
-JWT_TTL_HOURS = 24 * 7  # 7 days for convenience
+JWT_TTL_HOURS = 24 * 365  # 1 year (per user request — stay signed in)
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -115,12 +115,24 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
 class RegisterIn(BaseModel):
     mobile: str = Field(..., min_length=10, max_length=10)
     name: str = Field(..., min_length=2, max_length=60)
-    mpin: str = Field(..., min_length=4, max_length=4)
+    password: Optional[str] = Field(None, min_length=4, max_length=60)
+    mpin: Optional[str] = Field(None, min_length=4, max_length=60)  # legacy compat
 
 
 class LoginIn(BaseModel):
     mobile: str
-    mpin: str
+    password: Optional[str] = None
+    mpin: Optional[str] = None  # legacy compat
+
+
+class ForgotOtpIn(BaseModel):
+    mobile: str
+
+
+class ResetPasswordIn(BaseModel):
+    otp_id: str
+    otp: str
+    new_password: str = Field(..., min_length=4, max_length=60)
 
 
 class AdminLoginIn(BaseModel):
@@ -187,16 +199,23 @@ class WalletAdjustIn(BaseModel):
 
 class SettingsIn(BaseModel):
     whatsapp_number: Optional[str] = None
+    whatsapp_country_code: Optional[str] = None
     telegram_url: Optional[str] = None
     notice_text: Optional[str] = None
     upi_id: Optional[str] = None
+    upi_payee_name: Optional[str] = None
     qr_code_url: Optional[str] = None
     min_deposit: Optional[int] = None
     min_withdraw: Optional[int] = None
-    withdraw_open_time: Optional[str] = None   # "HH:MM"
-    withdraw_close_time: Optional[str] = None  # "HH:MM"
+    withdraw_open_time: Optional[str] = None
+    withdraw_close_time: Optional[str] = None
     result_api_url: Optional[str] = None
-    posters: Optional[List[dict]] = None       # [{image_url, link}]
+    sms_api_url: Optional[str] = None
+    sms_api_key: Optional[str] = None
+    sms_method: Optional[str] = None
+    sms_payload: Optional[str] = None
+    sms_sender_id: Optional[str] = None
+    posters: Optional[List[dict]] = None
     game_rates: Optional[dict] = None
 
 
@@ -209,8 +228,11 @@ class TransactionApproveIn(BaseModel):
 # ---------- Auth (User) ----------
 @api.post("/auth/register")
 async def register(payload: RegisterIn):
-    if not payload.mobile.isdigit() or not payload.mpin.isdigit():
-        raise HTTPException(400, "Mobile and MPIN must be numeric")
+    pw = payload.password or payload.mpin
+    if not pw:
+        raise HTTPException(422, "password is required")
+    if not payload.mobile.isdigit():
+        raise HTTPException(400, "Mobile must be 10 digits")
     existing = await db.users.find_one({"mobile": payload.mobile})
     if existing:
         raise HTTPException(400, "Mobile already registered")
@@ -219,14 +241,13 @@ async def register(payload: RegisterIn):
         "id": user_id,
         "mobile": payload.mobile,
         "name": payload.name,
-        "mpin_hash": hash_pw(payload.mpin),
+        "password_hash": hash_pw(pw),
         "role": "user",
-        "wallet_balance": 50,  # welcome bonus
+        "wallet_balance": 50,
         "status": "active",
         "created_at": now_iso(),
     }
     await db.users.insert_one(doc)
-    # welcome transaction
     await db.transactions.insert_one({
         "id": str(uuid.uuid4()),
         "user_id": user_id,
@@ -242,11 +263,19 @@ async def register(payload: RegisterIn):
 
 @api.post("/auth/login")
 async def login(payload: LoginIn):
+    pw = payload.password or payload.mpin
+    if not pw:
+        raise HTTPException(422, "password is required")
     user = await db.users.find_one({"mobile": payload.mobile, "role": "user"})
-    if not user or not verify_pw(payload.mpin, user.get("mpin_hash", "")):
-        raise HTTPException(401, "Invalid mobile or MPIN")
+    if not user:
+        raise HTTPException(401, "Invalid mobile or password")
+    hashed = user.get("password_hash") or user.get("mpin_hash") or ""
+    if not verify_pw(pw, hashed):
+        raise HTTPException(401, "Invalid mobile or password")
     if user.get("status") == "blocked":
         raise HTTPException(403, "Account blocked. Contact support.")
+    if not user.get("password_hash") and user.get("mpin_hash"):
+        await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": user["mpin_hash"]}})
     token = make_token(user["id"], "user")
     return {"token": token, "user": serialize(dict(user))}
 
@@ -261,14 +290,108 @@ async def change_mpin(
     body: dict,
     user: dict = Depends(get_current_user),
 ):
-    old = body.get("old_mpin", "")
-    new = body.get("new_mpin", "")
-    if not verify_pw(old, user.get("mpin_hash", "")):
-        raise HTTPException(400, "Old MPIN is incorrect")
-    if not (new.isdigit() and len(new) == 4):
-        raise HTTPException(400, "MPIN must be 4 digits")
-    await db.users.update_one({"id": user["id"]}, {"$set": {"mpin_hash": hash_pw(new)}})
+    """Legacy endpoint kept for compat. Use /auth/change-password instead."""
+    old = body.get("old_mpin") or body.get("old_password") or ""
+    new = body.get("new_mpin") or body.get("new_password") or ""
+    hashed = user.get("password_hash") or user.get("mpin_hash") or ""
+    if not verify_pw(old, hashed):
+        raise HTTPException(400, "Old password is incorrect")
+    if len(new) < 4:
+        raise HTTPException(400, "Password must be at least 4 characters")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(new)}})
     return {"ok": True}
+
+
+@api.post("/auth/change-password")
+async def change_password(body: dict, user: dict = Depends(get_current_user)):
+    old = body.get("old_password", "")
+    new = body.get("new_password", "")
+    hashed = user.get("password_hash") or user.get("mpin_hash") or ""
+    if not verify_pw(old, hashed):
+        raise HTTPException(400, "Old password is incorrect")
+    if len(new) < 4:
+        raise HTTPException(400, "Password must be at least 4 characters")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(new)}})
+    return {"ok": True}
+
+
+# ---------- Forgot password (OTP) ----------
+import random as _random
+import httpx as _httpx
+
+
+async def _send_sms(mobile: str, message: str) -> tuple[bool, str]:
+    """Send SMS via admin-configured provider. Returns (sent, info)."""
+    s = await db.settings.find_one({"key": "global"}) or {}
+    url = (s.get("sms_api_url") or "").strip()
+    key = (s.get("sms_api_key") or "").strip()
+    if not url or not key:
+        return (False, "SMS provider not configured — running in demo mode")
+    method = (s.get("sms_method") or "GET").upper()
+    template = s.get("sms_payload") or "{}"
+    # Replace placeholders
+    payload_str = template.replace("{mobile}", mobile).replace("{message}", message).replace("{api_key}", key).replace("{sender}", s.get("sms_sender_id") or "M11CLB")
+    try:
+        async with _httpx.AsyncClient(timeout=10) as cli:
+            if method == "POST":
+                # If payload is JSON, send JSON
+                try:
+                    import json as _json
+                    body = _json.loads(payload_str)
+                    r = await cli.post(url, json=body, headers={"Authorization": f"Bearer {key}"})
+                except Exception:
+                    r = await cli.post(url, data=payload_str, headers={"Authorization": f"Bearer {key}"})
+            else:
+                target = url
+                if payload_str and payload_str != "{}":
+                    sep = "&" if "?" in url else "?"
+                    target = url + sep + payload_str.lstrip("?&")
+                r = await cli.get(target)
+            return (200 <= r.status_code < 300, f"HTTP {r.status_code}")
+    except Exception as e:
+        return (False, str(e))
+
+
+@api.post("/auth/forgot-otp")
+async def forgot_otp(payload: ForgotOtpIn):
+    user = await db.users.find_one({"mobile": payload.mobile, "role": "user"})
+    if not user:
+        raise HTTPException(404, "No account with this mobile")
+    otp = f"{_random.randint(0, 999999):06d}"
+    otp_id = str(uuid.uuid4())
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    await db.otps.insert_one({
+        "id": otp_id,
+        "mobile": payload.mobile,
+        "otp_hash": hash_pw(otp),
+        "expires_at": expires,
+        "used": False,
+        "created_at": now_iso(),
+    })
+    sent, info = await _send_sms(payload.mobile, f"Your M11 CLUBE OTP is {otp}. Valid for 10 minutes.")
+    out = {"ok": True, "otp_id": otp_id, "sms_sent": sent, "sms_info": info}
+    if not sent:
+        # Demo mode: include OTP in response so admin can share manually / dev can test
+        out["demo_otp"] = otp
+    return out
+
+
+@api.post("/auth/reset-password")
+async def reset_password(payload: ResetPasswordIn):
+    row = await db.otps.find_one({"id": payload.otp_id, "used": False})
+    if not row:
+        raise HTTPException(400, "Invalid or expired OTP")
+    if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+        raise HTTPException(400, "OTP expired")
+    if not verify_pw(payload.otp, row["otp_hash"]):
+        raise HTTPException(400, "Incorrect OTP")
+    user = await db.users.find_one({"mobile": row["mobile"], "role": "user"})
+    if not user:
+        raise HTTPException(404, "User not found")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(payload.new_password)}})
+    await db.otps.update_one({"id": payload.otp_id}, {"$set": {"used": True}})
+    token = make_token(user["id"], "user")
+    return {"token": token, "user": serialize(dict(user))}
 
 
 # ---------- Auth (Admin) ----------
@@ -970,6 +1093,53 @@ async def admin_broadcast(body: dict, _: dict = Depends(require_admin)):
     return {"ok": True}
 
 
+# ---------- File upload (base64 -> id) ----------
+class UploadIn(BaseModel):
+    data_url: str  # "data:image/png;base64,...." or raw base64
+    filename: Optional[str] = None
+
+
+@api.post("/admin/upload")
+async def admin_upload(payload: UploadIn, _: dict = Depends(require_admin)):
+    data = payload.data_url
+    if not data:
+        raise HTTPException(400, "Empty payload")
+    # Accept ~3MB max to avoid bloating Mongo docs
+    if len(data) > 4_500_000:
+        raise HTTPException(413, "File too large (max ~3MB)")
+    fid = str(uuid.uuid4())
+    await db.files.insert_one({
+        "id": fid,
+        "filename": payload.filename or f"upload-{fid}",
+        "data_url": data,
+        "created_at": now_iso(),
+    })
+    return {"id": fid, "url": f"/api/files/{fid}"}
+
+
+@api.get("/files/{file_id}")
+async def get_file_redirect(file_id: str):
+    """Return the stored data URL directly as JSON so the frontend can use it as src."""
+    f = await db.files.find_one({"id": file_id})
+    if not f:
+        raise HTTPException(404, "File not found")
+    return {"id": file_id, "data_url": f["data_url"], "filename": f.get("filename")}
+
+
+# ---------- UPI Intent / Deposit helper ----------
+@api.get("/wallet/upi-intent")
+async def upi_intent(amount: int, user: dict = Depends(get_current_user)):
+    """Build a UPI intent URL the frontend can put into a <a href>. Works with any UPI app
+    (Paytm, PhonePe, GPay, BharatPe, Amazon Pay, etc.)."""
+    s = await db.settings.find_one({"key": "global"}) or {}
+    upi_id = s.get("upi_id") or "m11clube@upi"
+    payee = s.get("upi_payee_name") or "M11 CLUBE"
+    note = f"Deposit-{user.get('mobile', '')}-{amount}"
+    from urllib.parse import quote
+    href = f"upi://pay?pa={quote(upi_id)}&pn={quote(payee)}&am={amount}&cu=INR&tn={quote(note)}"
+    return {"upi_url": href, "upi_id": upi_id, "payee": payee, "amount": amount, "note": note}
+
+
 # ---------- Health ----------
 @api.get("/")
 async def root():
@@ -993,6 +1163,8 @@ async def on_startup():
     await db.markets.create_index("name")
     await db.bids.create_index("user_id")
     await db.transactions.create_index("user_id")
+    await db.results.create_index([("market_id", 1), ("date", 1)], unique=True)
+    await db.otps.create_index("mobile")
     await seed_all(db)
     logger.info("M11 CLUBE seed complete.")
 

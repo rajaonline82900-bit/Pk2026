@@ -2,10 +2,12 @@ import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
+import { I18nProvider } from "./lib/i18n";
 import { UserGuard, AdminGuard } from "./components/Guards";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import AdminLogin from "./pages/AdminLogin";
 
 import Dashboard from "./pages/Dashboard";
@@ -34,11 +36,13 @@ function App() {
   return (
     <div className="App" data-testid="app-root">
       <BrowserRouter>
+        <I18nProvider>
         <AuthProvider>
           <Routes>
             {/* Public */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* User app */}
@@ -72,6 +76,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
+        </I18nProvider>
       </BrowserRouter>
     </div>
   );

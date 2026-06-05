@@ -37,8 +37,8 @@ export function AuthProvider({ children }) {
     fetchMe();
   }, [fetchMe]);
 
-  const login = async (mobile, mpin) => {
-    const { data } = await api.post("/auth/login", { mobile, mpin });
+  const login = async (mobile, password) => {
+    const { data } = await api.post("/auth/login", { mobile, password });
     localStorage.setItem("m11_token", data.token);
     localStorage.setItem("m11_role", "user");
     setUser(data.user);
@@ -46,12 +46,19 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async (mobile, name, mpin) => {
-    const { data } = await api.post("/auth/register", { mobile, name, mpin });
+  const register = async (mobile, name, password) => {
+    const { data } = await api.post("/auth/register", { mobile, name, password });
     localStorage.setItem("m11_token", data.token);
     localStorage.setItem("m11_role", "user");
     setUser(data.user);
     return data.user;
+  };
+
+  const setSessionFromResetToken = (token, userData) => {
+    localStorage.setItem("m11_token", token);
+    localStorage.setItem("m11_role", "user");
+    setUser(userData);
+    setAdmin(null);
   };
 
   const adminLogin = async (email, password) => {
@@ -80,7 +87,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, admin, login, register, adminLogin, logout, refreshUser, formatApiError }}>
+    <AuthContext.Provider value={{ user, admin, login, register, adminLogin, logout, refreshUser, setSessionFromResetToken, formatApiError }}>
       {children}
     </AuthContext.Provider>
   );

@@ -17,8 +17,8 @@ export default function MPinPage() {
     if (newP !== confirm) return toast.error("MPINs do not match");
     setLoading(true);
     try {
-      await api.post("/auth/change-mpin", { old_mpin: oldP, new_mpin: newP });
-      toast.success("MPIN updated");
+      await api.post("/auth/change-password", { old_password: oldP, new_password: newP });
+      toast.success("Password updated");
       setOldP(""); setNewP(""); setConfirm("");
     } catch (e) { toast.error(formatApiError(e)); } finally { setLoading(false); }
   };
@@ -26,7 +26,7 @@ export default function MPinPage() {
   return (
     <MobileLayout>
       <Toaster richColors position="top-center" />
-      <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900 mb-3">MPIN Management</h1>
+      <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900 mb-3">Change Password</h1>
       <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
         <div>
           <Label className="text-xs uppercase tracking-wider text-slate-600">Current MPIN</Label>
