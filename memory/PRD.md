@@ -79,3 +79,19 @@ Build a complete, responsive Matka web application named **M11 CLUBE** with a fu
 - Auto-Result-Fetch returns a stub 501 until user provides their own API URL
 - Posters: admin can add/remove URLs but no built-in upload (paste URL only)
 
+
+## Phase 3 (2026-02-05)
+- ✅ MPIN → Password (4+ chars). Backend accepts both `password` (new) and `mpin` (legacy) for backward compat. Existing users auto-migrated on next login.
+- ✅ Auto-login after Register; **1-year JWT** (effectively no auto-logout)
+- ✅ Forgot Password via OTP — `POST /auth/forgot-otp` returns demo OTP when SMS provider not configured, real SMS when admin wires their gateway
+- ✅ Admin Settings → **SMS / OTP Provider** config: URL, API key, GET/POST, sender ID, payload template with `{mobile} {message} {api_key} {sender}` placeholders
+- ✅ **UPI Intent** deposits: 5 app buttons (PhonePe / GPay / Paytm / BHIM / Any UPI) that open the chosen app pre-filled with amount + merchant info via `upi://pay?…` deep links
+- ✅ Quick-amount chips: 100 / 200 / 500 / 1K / 10K / 20K / 50K on deposit + withdraw
+- ✅ Removed King Starline / King Jackpot tiles
+- ✅ WhatsApp icon now uses authentic SVG glyph; admin can set country code separately
+- ✅ Telegram channel URL in admin settings, linked from home quick-icon
+- ✅ Quick icons split: Deposit → /funds?tab=deposit, Withdraw → /funds?tab=withdraw (each opens the right tab)
+- ✅ GameScreen **sticky Place Bids bar** with running total + bid count
+- ✅ Settings page **Language switcher** (English / Hindi / Punjabi / Urdu) with RTL for Urdu
+- ✅ Admin Settings **poster file upload** (base64, max 3MB) — tap the thumbnail to upload from device
+- ✅ Backend tests: 49/49 passing (32 legacy + 17 new for Phase 3)

@@ -103,13 +103,39 @@ export default function AdminSettings() {
         </Card>
 
         <Card title="Home Posters (Sliders)">
-          <p className="text-xs text-slate-500 mb-3">Up to 5 posters shown on the user app dashboard above the quick icons. Use a 16:8 ratio image URL.</p>
+          <p className="text-xs text-slate-500 mb-3">Up to 5 posters shown on the user app dashboard. Upload a file (tap the thumbnail) or paste an image URL. 16:8 ratio recommended.</p>
           {posters.map((p, i) => (
             <div key={i} className="flex gap-2 items-center mb-2" data-testid={`poster-row-${i}`}>
-              <div className="w-12 h-12 rounded-md bg-slate-100 overflow-hidden shrink-0">
-                {p.image_url ? <img src={p.image_url} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-slate-400 m-3" />}
-              </div>
-              <Input placeholder="Image URL" value={p.image_url || ""} onChange={(e)=>{ const next=[...posters]; next[i]={...next[i], image_url: e.target.value}; setPosters(next); }} className="flex-1" data-testid={`poster-url-${i}`} />
+              <label className="w-12 h-12 rounded-md bg-slate-100 overflow-hidden shrink-0 cursor-pointer hover:bg-slate-200 transition flex items-center justify-center" title="Upload image">
+                {p.image_url ? (
+                  <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-slate-400" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  data-testid={`poster-file-${i}`}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 3 * 1024 * 1024) { toast.error("Max 3MB"); return; }
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                      try {
+                        const { data } = await api.post("/admin/upload", { data_url: reader.result, filename: f.name });
+                        const next = [...posters];
+                        next[i] = { ...next[i], image_url: reader.result, file_id: data.id };
+                        setPosters(next);
+                        toast.success("Image attached");
+                      } catch (err) { toast.error(formatApiError(err)); }
+                    };
+                    reader.readAsDataURL(f);
+                  }}
+                />
+              </label>
+              <Input placeholder="…or paste Image URL" value={p.image_url?.startsWith("data:") ? "(uploaded image)" : (p.image_url || "")} onChange={(e)=>{ const next=[...posters]; next[i]={...next[i], image_url: e.target.value}; setPosters(next); }} className="flex-1" data-testid={`poster-url-${i}`} disabled={p.image_url?.startsWith("data:")} />
               <Input placeholder="Click link (optional)" value={p.link || ""} onChange={(e)=>{ const next=[...posters]; next[i]={...next[i], link: e.target.value}; setPosters(next); }} className="flex-1" />
               <button onClick={()=>setPosters(posters.filter((_,j)=>j!==i))} className="p-2 text-rose-500 hover:bg-rose-50 rounded-md" data-testid={`poster-remove-${i}`}><Trash2 className="w-4 h-4" /></button>
             </div>
