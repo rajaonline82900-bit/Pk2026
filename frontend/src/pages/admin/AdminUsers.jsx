@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
 import { api, formatApiError } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { toast, Toaster } from "sonner";
-import { Search, ShieldOff, ShieldCheck, Wallet } from "lucide-react";
+import { Search, ShieldOff, ShieldCheck, Wallet, Eye } from "lucide-react";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -13,11 +14,13 @@ export default function AdminUsers() {
   const [adjustingUser, setAdjustingUser] = useState(null);
   const [adjustAmt, setAdjustAmt] = useState("");
   const [adjustNote, setAdjustNote] = useState("");
+  const navigate = useNavigate();
 
   const load = () => api.get("/admin/users", { params: { q } }).then(({data})=>setUsers(data));
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [q]);
 
-  const toggle = async (id) => {
+  const toggle = async (id, e) => {
+    e.stopPropagation();
     try { await api.post(`/admin/users/${id}/toggle-block`); toast.success("Updated"); load(); }
     catch (e) { toast.error(formatApiError(e)); }
   };
@@ -59,15 +62,16 @@ export default function AdminUsers() {
           </thead>
           <tbody data-testid="users-table-body">
             {users.map(u => (
-              <tr key={u.id} className="border-t border-slate-100" data-testid={`user-row-${u.id}`}>
+              <tr key={u.id} className="border-t border-slate-100 hover:bg-orange-50/30 cursor-pointer transition" data-testid={`user-row-${u.id}`} onClick={() => navigate(`/admin/users/${u.id}`)}>
                 <td className="px-4 py-3 font-medium text-slate-900">{u.name}</td>
                 <td className="px-4 py-3 tabular-nums text-slate-600">{u.mobile}</td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold">{u.wallet_balance}</td>
                 <td className="px-4 py-3"><span className={`text-[10px] uppercase tracking-widest font-semibold px-2 py-1 rounded-md ${u.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>{u.status}</span></td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right" onClick={(e)=>e.stopPropagation()}>
                   <div className="inline-flex gap-2">
+                    <Link to={`/admin/users/${u.id}`} data-testid={`view-${u.id}`} className="inline-flex items-center gap-1 text-xs border border-slate-200 hover:bg-slate-50 px-2.5 py-1.5 rounded-md"><Eye className="w-3 h-3" /> View</Link>
                     <button data-testid={`adjust-${u.id}`} onClick={()=>setAdjustingUser(u)} className="inline-flex items-center gap-1 text-xs border border-slate-200 hover:bg-slate-50 px-2.5 py-1.5 rounded-md"><Wallet className="w-3 h-3" /> Adjust</button>
-                    <button data-testid={`block-${u.id}`} onClick={()=>toggle(u.id)} className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border ${u.status === "active" ? "border-rose-200 text-rose-600 hover:bg-rose-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
+                    <button data-testid={`block-${u.id}`} onClick={(e)=>toggle(u.id, e)} className={`inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border ${u.status === "active" ? "border-rose-200 text-rose-600 hover:bg-rose-50" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
                       {u.status === "active" ? (<><ShieldOff className="w-3 h-3" /> Block</>) : (<><ShieldCheck className="w-3 h-3" /> Unblock</>)}
                     </button>
                   </div>

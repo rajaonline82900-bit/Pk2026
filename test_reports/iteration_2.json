@@ -1,0 +1,45 @@
+{
+  "summary": "Phase-2 backend + frontend smoke testing. Found 1 CRITICAL backend bug in /api/wallet/withdraw (referenced removed payload.account_info attribute -> 500 on every withdraw call) which I FIXED in server.py and added proper UPI/Bank validation + IST withdrawal time window enforcement. After fix: all 23 legacy tests + 9 new Phase-2 tests pass (32/32, 100%). Frontend smoke: user login, dashboard with poster carousel + 4 round quick icons (Deposit/Withdraw/Telegram/WhatsApp) + scrolling notice + market list -> OK. MarketDetail shows 23 game cards with colored gradient icons (data-testid game-{key}) -> OK. Funds page Withdraw tab has UPI/Bank tabs and all 4 bank fields (wd-holder/wd-bank-name/wd-account/wd-ifsc) -> OK. Emergent badge hidden on both user and admin views -> OK. Admin pages render all required UI visually (user detail stats+tabs+Adjust Wallet+Block, Payments filter chips Pending/Approved/Rejected with Approve/Reject + copy icons, Results 'Fetch From API' + Reverse buttons on declared markets, Settings Telegram URL/Withdrawal Window/Result API URL/Home Posters editor) but most admin data-testid attributes are MISSING with the expected kebab-case names, making automation brittle.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Dashboard market cards", "issue": "Tapping a market card on Home does NOT navigate to /market/{id} when the market shows 'Closed For Today' (the card's click handler appears blocked by the closed-badge overlay or wrapper is not a Link). Direct nav to /market/{id} works fine and shows 23 game cards. Users will be unable to view/play past markets the same day.", "selector": "[data-testid^='market-']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin pages", "issues": ["Missing data-testid attributes for: user-row-*, tab-bids/tab-deposits/tab-withdrawals/tab-transactions, adjust-wallet-btn, block-user-btn, stat-* cards, filter-pending/approved/rejected chips, copy-* buttons, fetch-results-btn, setting-telegram-url, setting-withdraw-open, setting-withdraw-close, setting-result-api-url, add-poster-btn, save-posters-btn. The UI is fully present and functional in screenshots but automation is brittle. Recommend adding kebab-case data-testid to these admin elements."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_phase2.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Verify and re-test /api/wallet/withdraw on staging — I fixed the AttributeError on payload.account_info, added per-method validation (UPI requires upi_id; Bank requires holder_name/bank_name/account_number/ifsc), and added IST withdraw-time-window enforcement when both withdraw_open_time and withdraw_close_time are set.",
+    "Add data-testid attributes to admin pages (see design_issues) so automation can target them. Examples: data-testid='user-row-{id}', 'tab-bids', 'adjust-wallet-btn', 'filter-pending', 'fetch-results-btn', 'setting-telegram-url', 'add-poster-btn', 'save-posters-btn'.",
+    "Make Dashboard market card always navigable (whether open or closed) — wrap entire card in <Link to=`/market/${id}`> so closed markets can still be viewed/history-browsed.",
+    "Optional cleanup: my test_phase2 tests declared and reverted today's results for the first market (SRIDEVI MORNING); reverse handler cleans up the results-collection row, but the markets-doc cache should also be intact. Verified by post-test GET /api/results/{id}."
+  ],
+  "critical_code_review_comments": [
+    "server.py /api/wallet/withdraw had a hard 500 due to schema/field mismatch (payload.account_info no longer exists). This is a latent refactor bug that completely broke the withdraw feature. FIXED in this iteration.",
+    "WithdrawIn schema accepts method='upi'|'bank' but does not enforce required fields per method at the Pydantic layer — handled in route logic instead. Consider model_validator for cleaner errors.",
+    "_market_open_status uses naive `now < open_dt` which means open session is considered active before open_time (i.e. all night). Logic should probably be open_dt <= now < close_dt to reflect the actual playing window.",
+    "admin_fetch_results stub returns 200 with ok=false even when result_api_url IS configured — should either implement the call or also return 501 until wired. Current behavior is misleading.",
+    "/admin/transactions query param name `status_f` is non-standard; rename to `status` for consistency with the front-end filter chips."
+  ],
+  "updated_files": [
+    "/app/backend/server.py (fixed /api/wallet/withdraw: removed broken payload.account_info ref, added UPI/Bank validation + IST time-window enforcement)",
+    "/app/backend/tests/test_phase2.py (new: 9 tests covering new settings fields, withdraw UPI/Bank, date-aware results, reverse-result, auto-fetch 501, user detail)"
+  ],
+  "success_rate": {"backend": "100% (32/32)", "frontend": "~90% (functional UI verified; selectors brittle on admin)"},
+  "test_credentials": "Admin: admin@m11clube.com / admin123  |  User: 9999999999 / 1234",
+  "seed_data_creation": "Phase-2 tests: a few TEST_UTR deposit requests + TEST_topup wallet adjustments on user 9999999999; results declared and then reversed on first market (net zero). Withdraw window widened to 00:00-23:59 during the test session (admin can restore via Settings).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/ -v` — expect 32 passing. New file test_phase2.py covers all new endpoints. The autouse fixture widens the withdrawal window to 24h so tests run any time of day; remember to restore to 08:00->20:00 in production via PATCH /api/admin/settings if needed. Admin UI works visually but data-testid attributes are mostly missing — see design_issues.",
+  "rca_of_the_issue": "Bug: /api/wallet/withdraw returned 500 on every successful-amount request. Root cause: in commit refactoring WithdrawIn to support UPI+Bank, the route still referenced `payload.account_info` which was removed from the model -> AttributeError -> 500. Reproduction: POST /api/wallet/withdraw {amount:500, method:'upi', upi_id:'x'} with valid user token. Fix applied: server.py now (1) validates upi_id when method=='upi', (2) validates holder_name/bank_name/account_number/ifsc when method=='bank' (returns 400 listing missing fields), (3) enforces IST withdraw_open_time/withdraw_close_time window when both are set, (4) stores account_info as a structured dict on the transaction record."
+}

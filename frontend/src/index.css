@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Emergent platform branding inside the app */
+#emergent-badge,
+a[id="emergent-badge"],
+a[href*="emergent.sh"][target="_blank"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 body {
   margin: 0;
   font-family: 'DM Sans', system-ui, sans-serif;

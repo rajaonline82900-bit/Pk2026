@@ -90,10 +90,37 @@ async def seed_all(db):
         await db.settings.insert_one({
             "key": "global",
             "whatsapp_number": "+919999999999",
-            "notice_text": "Welcome to M11 CLUBE — India's most trusted online Matka platform. Play responsibly. Min deposit ₹100. 24/7 support available on WhatsApp.",
+            "telegram_url": "https://t.me/m11clube",
+            "notice_text": "Welcome to M11 CLUBE — India's most trusted online Matka platform. Play responsibly. Min deposit 100. 24/7 support available on WhatsApp.",
             "upi_id": "m11clube@upi",
             "qr_code_url": "",
             "min_deposit": 100,
             "min_withdraw": 500,
+            "withdraw_open_time": "08:00",
+            "withdraw_close_time": "20:00",
+            "result_api_url": "",
+            "posters": [
+                {"image_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=70&auto=format&fit=crop", "link": ""},
+                {"image_url": "https://images.unsplash.com/photo-1517242810446-cc8951b2be40?w=800&q=70&auto=format&fit=crop", "link": ""},
+                {"image_url": "https://images.unsplash.com/photo-1620207418302-439b387441b0?w=800&q=70&auto=format&fit=crop", "link": ""},
+            ],
             "game_rates": default_game_rates(),
         })
+    else:
+        # Backfill any new fields without overwriting existing values
+        patch = {}
+        for k, v in [
+            ("telegram_url", "https://t.me/m11clube"),
+            ("withdraw_open_time", "08:00"),
+            ("withdraw_close_time", "20:00"),
+            ("result_api_url", ""),
+            ("posters", [
+                {"image_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=70&auto=format&fit=crop", "link": ""},
+                {"image_url": "https://images.unsplash.com/photo-1517242810446-cc8951b2be40?w=800&q=70&auto=format&fit=crop", "link": ""},
+                {"image_url": "https://images.unsplash.com/photo-1620207418302-439b387441b0?w=800&q=70&auto=format&fit=crop", "link": ""},
+            ]),
+        ]:
+            if k not in settings:
+                patch[k] = v
+        if patch:
+            await db.settings.update_one({"key": "global"}, {"$set": patch})

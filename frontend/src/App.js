@@ -28,6 +28,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminBids from "./pages/admin/AdminBids";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
             <Route path="/admin/markets" element={<AdminGuard><AdminMarkets /></AdminGuard>} />
             <Route path="/admin/results" element={<AdminGuard><AdminResults /></AdminGuard>} />
             <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+            <Route path="/admin/users/:id" element={<AdminGuard><AdminUserDetail /></AdminGuard>} />
             <Route path="/admin/payments" element={<AdminGuard><AdminPayments /></AdminGuard>} />
             <Route path="/admin/bids" element={<AdminGuard><AdminBids /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />

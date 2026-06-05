@@ -169,7 +169,14 @@ class DepositIn(BaseModel):
 
 class WithdrawIn(BaseModel):
     amount: int
-    account_info: str  # UPI ID or bank text
+    method: Literal["upi", "bank"] = "upi"
+    # UPI
+    upi_id: Optional[str] = None
+    # Bank
+    holder_name: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    ifsc: Optional[str] = None
 
 
 class WalletAdjustIn(BaseModel):
@@ -180,11 +187,16 @@ class WalletAdjustIn(BaseModel):
 
 class SettingsIn(BaseModel):
     whatsapp_number: Optional[str] = None
+    telegram_url: Optional[str] = None
     notice_text: Optional[str] = None
     upi_id: Optional[str] = None
     qr_code_url: Optional[str] = None
     min_deposit: Optional[int] = None
     min_withdraw: Optional[int] = None
+    withdraw_open_time: Optional[str] = None   # "HH:MM"
+    withdraw_close_time: Optional[str] = None  # "HH:MM"
+    result_api_url: Optional[str] = None
+    posters: Optional[List[dict]] = None       # [{image_url, link}]
     game_rates: Optional[dict] = None
 
 
@@ -299,8 +311,9 @@ async def get_settings():
 
 
 # ---------- Markets (Public) ----------
-def _market_open_status(m: dict) -> dict:
-    """Add live open/close flags using IST time."""
+def _market_open_status(m: dict, today_results: Optional[dict] = None) -> dict:
+    """Add live open/close flags using IST time. `today_results` is an optional pre-fetched
+    dict {market_id: {open_pana, close_pana}} used to render `live_result` for the day."""
     now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
     today_str = now.strftime("%Y-%m-%d")
     open_t = m.get("open_time", "00:00")
@@ -310,7 +323,6 @@ def _market_open_status(m: dict) -> dict:
         ch, cm = map(int, close_t.split(":"))
         open_dt = now.replace(hour=oh, minute=om, second=0, microsecond=0)
         close_dt = now.replace(hour=ch, minute=cm, second=0, microsecond=0)
-        # Open session closes 15 min before open_time? Standard matka: bids close at open_time
         m["is_open_session_active"] = now < open_dt and m.get("status") == "active"
         m["is_close_session_active"] = now < close_dt and m.get("status") == "active"
         m["is_market_active"] = (now < close_dt) and m.get("status") == "active"
@@ -319,9 +331,19 @@ def _market_open_status(m: dict) -> dict:
         m["is_close_session_active"] = False
         m["is_market_active"] = False
 
-    # Live result string from today's declared results
-    op = m.get("open_result") if m.get("result_date") == today_str else None
-    cp = m.get("close_result") if m.get("result_date") == today_str else None
+    # Live result string from TODAY's results-collection row (date-aware)
+    op = None
+    cp = None
+    if today_results is not None:
+        r = today_results.get(m.get("id"))
+        if r:
+            op = r.get("open_pana")
+            cp = r.get("close_pana")
+    else:
+        # Fallback to cached on market doc (only if dated today)
+        if m.get("result_date") == today_str:
+            op = m.get("open_result")
+            cp = m.get("close_result")
     open_digit = sum(int(c) for c in op) % 10 if op else None
     close_digit = sum(int(c) for c in cp) % 10 if cp else None
     if op and cp and open_digit is not None and close_digit is not None:
@@ -330,16 +352,27 @@ def _market_open_status(m: dict) -> dict:
         m["live_result"] = f"{op}-{open_digit}*-***"
     else:
         m["live_result"] = "***-**-***"
+    m["result_date"] = today_str if (op or cp) else None
+    m["open_result"] = op
+    m["close_result"] = cp
     return m
+
+
+async def _fetch_today_results() -> dict:
+    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
+    out = {}
+    async for r in db.results.find({"date": today}):
+        out[r["market_id"]] = {"open_pana": r.get("open_pana"), "close_pana": r.get("close_pana")}
+    return out
 
 
 @api.get("/markets")
 async def list_markets():
+    today_results = await _fetch_today_results()
     out = []
     async for m in db.markets.find({}):
         m.pop("_id", None)
-        out.append(_market_open_status(m))
-    # sort by open_time
+        out.append(_market_open_status(m, today_results))
     out.sort(key=lambda x: x.get("open_time", "99:99"))
     return out
 
@@ -350,7 +383,8 @@ async def get_market(market_id: str):
     if not m:
         raise HTTPException(404, "Market not found")
     m.pop("_id", None)
-    return _market_open_status(m)
+    today_results = await _fetch_today_results()
+    return _market_open_status(m, today_results)
 
 
 # ---------- Bids ----------
@@ -359,7 +393,8 @@ async def place_bid(payload: BidPlace, user: dict = Depends(get_current_user)):
     market = await db.markets.find_one({"id": payload.market_id})
     if not market:
         raise HTTPException(404, "Market not found")
-    market = _market_open_status(market)
+    today_results = await _fetch_today_results()
+    market = _market_open_status(market, today_results)
     if not market.get("is_market_active"):
         raise HTTPException(400, "Market is closed for today")
     if not payload.bids:
@@ -373,6 +408,7 @@ async def place_bid(payload: BidPlace, user: dict = Depends(get_current_user)):
 
     settings = await db.settings.find_one({"key": "global"}) or {}
     rates = settings.get("game_rates") or default_game_rates()
+    today_ist = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
 
     bid_docs = []
     for b in payload.bids:
@@ -401,6 +437,7 @@ async def place_bid(payload: BidPlace, user: dict = Depends(get_current_user)):
             "rate": rates.get(b.game_type, cfg["rate"]),
             "status": "pending",
             "win_amount": 0,
+            "result_date": today_ist,
             "created_at": now_iso(),
         })
 
@@ -466,6 +503,38 @@ async def request_withdraw(payload: WithdrawIn, user: dict = Depends(get_current
         raise HTTPException(400, "Minimum withdrawal is 500 points")
     if user.get("wallet_balance", 0) < payload.amount:
         raise HTTPException(400, "Insufficient balance")
+    # Validate per-method payload
+    account_info = {}
+    if payload.method == "upi":
+        if not payload.upi_id:
+            raise HTTPException(400, "upi_id is required for UPI withdrawal")
+        account_info = {"upi_id": payload.upi_id}
+    elif payload.method == "bank":
+        missing = [k for k in ("holder_name", "bank_name", "account_number", "ifsc")
+                   if not getattr(payload, k)]
+        if missing:
+            raise HTTPException(400, f"Missing bank field(s): {', '.join(missing)}")
+        account_info = {
+            "holder_name": payload.holder_name,
+            "bank_name": payload.bank_name,
+            "account_number": payload.account_number,
+            "ifsc": payload.ifsc,
+        }
+    # Enforce withdrawal time window (IST) when both bounds are configured
+    settings = await db.settings.find_one({"key": "global"}) or {}
+    wo, wc = settings.get("withdraw_open_time"), settings.get("withdraw_close_time")
+    if wo and wc:
+        try:
+            oh, om = map(int, wo.split(":"))
+            ch, cm = map(int, wc.split(":"))
+            now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+            cur = dtime(now_ist.hour, now_ist.minute)
+            if not (dtime(oh, om) <= cur <= dtime(ch, cm)):
+                raise HTTPException(400, f"Withdrawals allowed only between {wo} and {wc} IST")
+        except HTTPException:
+            raise
+        except Exception:
+            pass
     # Hold the amount immediately
     await db.users.update_one({"id": user["id"]}, {"$inc": {"wallet_balance": -payload.amount}})
     tid = str(uuid.uuid4())
@@ -476,7 +545,8 @@ async def request_withdraw(payload: WithdrawIn, user: dict = Depends(get_current
         "user_name": user.get("name"),
         "type": "withdraw",
         "amount": -payload.amount,
-        "account_info": payload.account_info,
+        "method": payload.method,
+        "account_info": account_info,
         "status": "pending",
         "note": "Pending admin payout",
         "created_at": now_iso(),
@@ -557,42 +627,63 @@ async def admin_delete_market(market_id: str, _: dict = Depends(require_admin)):
 
 @api.post("/admin/markets/{market_id}/result")
 async def admin_declare_result(market_id: str, payload: ResultIn, _: dict = Depends(require_admin)):
-    """Declare open and/or close pana. Auto-settles pending bids when ready."""
+    """Declare open and/or close pana for TODAY (IST). Auto-settles pending bids when ready.
+
+    Each day's result is stored in `results` collection keyed by (market_id, date).
+    The market document also caches the latest declared result for backwards compat.
+    """
     market = await db.markets.find_one({"id": market_id})
     if not market:
         raise HTTPException(404, "Market not found")
     today = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
-    update = {"result_date": today}
+
+    # Upsert today's row in results collection
+    existing = await db.results.find_one({"market_id": market_id, "date": today})
+    row = existing or {
+        "id": str(uuid.uuid4()),
+        "market_id": market_id,
+        "market_name": market["name"],
+        "date": today,
+        "open_pana": None,
+        "close_pana": None,
+        "declared_at": now_iso(),
+    }
     if payload.open_pana:
         if not (payload.open_pana.isdigit() and len(payload.open_pana) == 3):
             raise HTTPException(400, "open_pana must be 3 digits")
-        update["open_result"] = payload.open_pana
+        row["open_pana"] = payload.open_pana
     if payload.close_pana:
         if not (payload.close_pana.isdigit() and len(payload.close_pana) == 3):
             raise HTTPException(400, "close_pana must be 3 digits")
-        update["close_result"] = payload.close_pana
-    await db.markets.update_one({"id": market_id}, {"$set": update})
+        row["close_pana"] = payload.close_pana
+    row["declared_at"] = now_iso()
+    if existing:
+        await db.results.update_one({"market_id": market_id, "date": today}, {"$set": {"open_pana": row["open_pana"], "close_pana": row["close_pana"], "declared_at": row["declared_at"]}})
+    else:
+        await db.results.insert_one(row)
 
-    market = await db.markets.find_one({"id": market_id})
-    open_p = market.get("open_result")
-    close_p = market.get("close_result")
+    # Cache the latest declared result on the market doc (for quick `live_result` rendering)
+    market_update = {"result_date": today, "open_result": row["open_pana"], "close_result": row["close_pana"]}
+    await db.markets.update_one({"id": market_id}, {"$set": market_update})
 
-    # Settle pending bids
+    open_p = row.get("open_pana")
+    close_p = row.get("close_pana")
+
+    # Settle pending bids placed TODAY only (so yesterday's stale bids don't accidentally settle)
     settled = 0
     won = 0
     payout_total = 0
-    async for bid in db.bids.find({"market_id": market_id, "status": "pending"}):
+    query = {"market_id": market_id, "status": "pending", "result_date": today}
+    async for bid in db.bids.find(query):
         cfg = GAMES.get(bid["game_type"])
         if not cfg:
             continue
-        # Only settle if relevant results are available
         if cfg["session"]:
             if bid["session"] == "open" and not open_p:
                 continue
             if bid["session"] == "close" and not close_p:
                 continue
         else:
-            # jodi/sangam need both
             if not (open_p and close_p):
                 continue
         win = evaluate_bid(bid["game_type"], bid.get("session"), bid["number"], open_p, close_p)
@@ -611,12 +702,13 @@ async def admin_declare_result(market_id: str, payload: ResultIn, _: dict = Depe
                 "amount": win_amount,
                 "status": "approved",
                 "note": f"Won bid on {bid['market_name']} ({bid['game_name']})",
+                "ref_bid_id": bid["id"],
                 "created_at": now_iso(),
             })
             await db.notifications.insert_one({
                 "id": str(uuid.uuid4()),
                 "user_id": bid["user_id"],
-                "title": "Congratulations! You won 🎉",
+                "title": "Congratulations! You won",
                 "body": f"Your bid of {bid['amount']} on {bid['game_name']} ({bid['market_name']}) won {win_amount} points.",
                 "created_at": now_iso(),
             })
@@ -624,7 +716,137 @@ async def admin_declare_result(market_id: str, payload: ResultIn, _: dict = Depe
             payout_total += win_amount
         settled += 1
     market.pop("_id", None)
-    return {"market": market, "settled": settled, "won": won, "payout_total": payout_total}
+    return {"market": {**market, **market_update}, "settled": settled, "won": won, "payout_total": payout_total, "date": today}
+
+
+@api.post("/admin/markets/{market_id}/reverse-result")
+async def admin_reverse_result(market_id: str, body: dict, _: dict = Depends(require_admin)):
+    """Undo today's (or given date's) result: revert won credits, set bids back to pending,
+    clear declared open/close pana. Bids from that date are reset.
+    """
+    market = await db.markets.find_one({"id": market_id})
+    if not market:
+        raise HTTPException(404, "Market not found")
+    date = body.get("date") or datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
+
+    reverted = 0
+    refunded = 0
+    # Revert all settled bids for this market on this date
+    async for bid in db.bids.find({"market_id": market_id, "result_date": date, "status": {"$in": ["won", "lost"]}}):
+        if bid.get("status") == "won":
+            win_amount = bid.get("win_amount", 0)
+            # Debit the win amount back from the user
+            await db.users.update_one({"id": bid["user_id"]}, {"$inc": {"wallet_balance": -win_amount}})
+            refunded += win_amount
+            await db.transactions.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": bid["user_id"],
+                "type": "reverse",
+                "amount": -win_amount,
+                "status": "approved",
+                "note": f"Result reversed for {bid['market_name']} — winning credit reverted",
+                "ref_bid_id": bid["id"],
+                "created_at": now_iso(),
+            })
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": bid["user_id"],
+                "title": "Result reversed",
+                "body": f"Result for {bid['market_name']} was reversed by admin. Your winning of {win_amount} points has been reverted.",
+                "created_at": now_iso(),
+            })
+        await db.bids.update_one({"id": bid["id"]}, {"$set": {"status": "pending", "win_amount": 0}, "$unset": {"settled_at": ""}})
+        reverted += 1
+
+    await db.results.delete_one({"market_id": market_id, "date": date})
+    # Clear cache on market doc if it referenced this date
+    if market.get("result_date") == date:
+        await db.markets.update_one({"id": market_id}, {"$set": {"open_result": None, "close_result": None, "result_date": None}})
+
+    return {"ok": True, "reverted_bids": reverted, "refunded": refunded, "date": date}
+
+
+@api.get("/admin/markets/{market_id}/results")
+async def admin_list_market_results(market_id: str, _: dict = Depends(require_admin), limit: int = 60):
+    out = []
+    async for r in db.results.find({"market_id": market_id}).sort("date", -1).limit(limit):
+        r.pop("_id", None)
+        out.append(r)
+    return out
+
+
+@api.post("/admin/results/fetch")
+async def admin_fetch_results(body: dict, _: dict = Depends(require_admin)):
+    """Stub for auto-result fetching. Calls the configured result_api_url with optional
+    market_id+date params and expects JSON like [{market_id, date, open_pana, close_pana}].
+    For now returns a 501 if not configured so the admin can wire their own API later.
+    """
+    settings = await db.settings.find_one({"key": "global"}) or {}
+    url = settings.get("result_api_url")
+    if not url:
+        raise HTTPException(501, "Result API URL not configured. Set it in System Settings first.")
+    return {"ok": False, "message": "Auto-fetch wired but no external call implemented yet. Provide a webhook that returns market results and we'll plug it in."}
+
+
+@api.get("/results/{market_id}")
+async def public_market_results(market_id: str, limit: int = 30):
+    """Public endpoint: chart-style history of declared results for a market."""
+    out = []
+    async for r in db.results.find({"market_id": market_id}).sort("date", -1).limit(limit):
+        r.pop("_id", None)
+        out.append(r)
+    return out
+
+
+@api.get("/admin/users/{user_id}/detail")
+async def admin_user_detail(user_id: str, _: dict = Depends(require_admin)):
+    u = await db.users.find_one({"id": user_id})
+    if not u:
+        raise HTTPException(404, "User not found")
+    u.pop("_id", None)
+    u.pop("mpin_hash", None)
+    u.pop("password_hash", None)
+
+    bids = []
+    async for b in db.bids.find({"user_id": user_id}).sort("created_at", -1).limit(200):
+        b.pop("_id", None)
+        bids.append(b)
+
+    deposits = []
+    async for t in db.transactions.find({"user_id": user_id, "type": "deposit"}).sort("created_at", -1).limit(100):
+        t.pop("_id", None)
+        deposits.append(t)
+
+    withdrawals = []
+    async for t in db.transactions.find({"user_id": user_id, "type": "withdraw"}).sort("created_at", -1).limit(100):
+        t.pop("_id", None)
+        withdrawals.append(t)
+
+    transactions = []
+    async for t in db.transactions.find({"user_id": user_id}).sort("created_at", -1).limit(300):
+        t.pop("_id", None)
+        transactions.append(t)
+
+    # Aggregates
+    total_dep = sum(t["amount"] for t in deposits if t.get("status") == "approved")
+    total_wd = sum(abs(t["amount"]) for t in withdrawals if t.get("status") == "approved")
+    total_bid = sum(b["amount"] for b in bids)
+    total_won = sum(b.get("win_amount", 0) for b in bids if b.get("status") == "won")
+
+    return {
+        "user": u,
+        "bids": bids,
+        "deposits": deposits,
+        "withdrawals": withdrawals,
+        "transactions": transactions,
+        "summary": {
+            "total_deposit": total_dep,
+            "total_withdraw": total_wd,
+            "total_bid": total_bid,
+            "total_won": total_won,
+            "open_bids": sum(1 for b in bids if b["status"] == "pending"),
+        },
+    }
 
 
 @api.get("/admin/users")

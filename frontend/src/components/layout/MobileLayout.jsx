@@ -107,8 +107,8 @@ export default function MobileLayout({ children }) {
       {/* Page content */}
       <main className="px-4 py-4" data-testid="page-content">{children}</main>
 
-      {/* Bottom Nav (right-edge inset to clear the floating Made-with-Emergent badge) */}
-      <nav className="fixed bottom-0 left-0 z-[60] bg-white border-t border-slate-200 shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]" style={{ right: '180px', maxWidth: '28rem', marginLeft: 'auto', marginRight: 'auto' }} data-testid="bottom-nav">
+      {/* Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-[60] max-w-md mx-auto bg-white border-t border-slate-200 shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]" data-testid="bottom-nav">
         <div className="grid grid-cols-5">
           {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
