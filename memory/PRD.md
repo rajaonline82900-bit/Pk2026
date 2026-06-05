@@ -62,3 +62,20 @@ Build a complete, responsive Matka web application named **M11 CLUBE** with a fu
 - `/app/frontend/src/pages/*` — user app pages
 - `/app/frontend/src/pages/admin/*` — admin panel pages
 - `/app/memory/test_credentials.md` — admin & test user credentials
+
+## Phase 2 — User Feedback (2026-02-05)
+- ✅ Admin user-row clickable → new `/admin/users/:id` detail page with stat cards + 4 tabs (Bids / Deposits / Withdrawals / All Transactions), Adjust Wallet + Block actions
+- ✅ Dashboard top: poster carousel (auto-rotate, admin-editable up to 5 posters) + 4 round quick-action icons (Deposit / Withdraw / Telegram / WhatsApp)
+- ✅ Withdrawal supports BOTH **UPI** and **Bank Transfer** (holder name, bank name, account#, IFSC)
+- ✅ Withdrawal time-window (admin sets open/close IST times — out-of-window requests rejected)
+- ✅ Admin payments page: status filter chips (Pending / Approved / Rejected), Copy buttons for UPI ID / mobile / bank fields, structured display of bank details, Approve / Reject inline with optional note
+- ✅ Date-aware results — new `results` collection keyed by (market_id, date); each new day starts fresh; reverse-result endpoint refunds wallet credits + resets bids to pending + sends notifications
+- ✅ Result API URL hook + Fetch From API button (admin can wire their own provider)
+- ✅ Emergent platform badge hidden site-wide via CSS
+- ✅ Market detail page now shows 22 game cards with colored gradient Lucide icons
+- ✅ Backend test suite expanded to 32/32 passing (9 new tests for Phase 2 features)
+
+### Known minor gaps
+- Auto-Result-Fetch returns a stub 501 until user provides their own API URL
+- Posters: admin can add/remove URLs but no built-in upload (paste URL only)
+

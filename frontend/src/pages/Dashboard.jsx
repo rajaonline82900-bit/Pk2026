@@ -140,7 +140,7 @@ function QuickIcons({ settings }) {
 function MarketCard({ m }) {
   const playable = m.is_market_active;
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition" data-testid={`market-card-${m.id}`}>
+    <Link to={`/market/${m.id}`} className="block bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-orange-200 transition" data-testid={`market-card-${m.id}`}>
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="font-display font-bold text-slate-900 text-base tracking-tight" data-testid="market-name">{m.name}</div>
@@ -160,11 +160,11 @@ function MarketCard({ m }) {
           Open: <span className="text-slate-700 font-medium">{timeStr(m.open_time)}</span> · Close: <span className="text-slate-700 font-medium">{timeStr(m.close_time)}</span>
         </div>
         {playable ? (
-          <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="btn-brand px-4 py-2 rounded-lg text-sm">Play Game</Link>
+          <span data-testid={`play-btn-${m.id}`} className="btn-brand px-4 py-2 rounded-lg text-sm">Play Game</span>
         ) : (
-          <button data-testid={`closed-btn-${m.id}`} disabled className="px-4 py-2 rounded-lg text-sm bg-slate-100 text-slate-400 cursor-not-allowed font-medium">Closed For Today</button>
+          <span data-testid={`closed-btn-${m.id}`} className="px-4 py-2 rounded-lg text-sm bg-slate-100 text-slate-400 font-medium">Closed For Today</span>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
