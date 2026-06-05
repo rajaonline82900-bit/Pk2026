@@ -1,0 +1,114 @@
+{
+  "project_name": "M11 CLUBE",
+  "theme": "light",
+  "archetype": "Archetype 4: Swiss & High-Contrast (Adapted for Fintech/Trust)",
+  "design_philosophy": "A modern, clean, high-trust fintech-style interface. Reassuring rather than flashy. Minimalist, transparent, security-forward. Neutral backgrounds, restrained color use, bold typography for key amounts or outcomes, and subtle success/error states. Avoid casino-flashy aesthetics. Use pure structural grayscale for hierarchy and vibrant orange/gold only for key actions.",
+  "typography": {
+    "primary_font": "Outfit",
+    "primary_font_url": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap",
+    "secondary_font": "DM Sans",
+    "secondary_font_url": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap",
+    "rules": {
+      "headings": "Use 'Outfit'. Tight letter spacing (tracking-tight). Do not use default bold everywhere; use font-medium or font-semibold selectively.",
+      "body": "Use 'DM Sans'. Clean, highly legible for numbers and data.",
+      "numbers": "Use tabular-nums for live results and balances to prevent layout shifting.",
+      "labels": "Uppercase, tiny, wide spacing (tracking-wider) for overlines and small labels."
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#FFFFFF",
+      "surface": "#F8F9FA",
+      "surface_hover": "#F1F3F5"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "muted": "#94A3B8",
+      "inverse": "#FFFFFF"
+    },
+    "brand": {
+      "primary": "#FF7A00",
+      "primary_hover": "#E66D00",
+      "gold_accent": "#F5A623",
+      "gold_light": "#FFF7E6"
+    },
+    "status": {
+      "success": "#10B981",
+      "success_bg": "#ECFDF5",
+      "error": "#EF4444",
+      "error_bg": "#FEF2F2",
+      "warning": "#F59E0B",
+      "info": "#3B82F6"
+    },
+    "borders": {
+      "default": "#E2E8F0",
+      "focus": "#FF7A00"
+    }
+  },
+  "spacing_and_layout": {
+    "container": "max-w-md mx-auto for mobile app view, max-w-7xl for admin dashboard.",
+    "padding": "Generous spacing. Use p-4 or p-6 for cards. Use gap-4 for lists.",
+    "radius": "Sharp but safe edges. Use rounded-lg (8px) or rounded-xl (12px) for cards. Avoid fully pill-shaped buttons unless for small tags.",
+    "shadows": "Minimalist. Use shadow-sm for default cards, shadow-md on hover. No heavy drop shadows. 1px borders preferred over shadows.",
+    "grid": "Bento style for dashboard stats. Strict 1-column list for markets on mobile."
+  },
+  "components": {
+    "Header": {
+      "style": "Sticky top, bg-white/90 backdrop-blur-md, z-50, border-b border-slate-200. Clean display of Wallet Balance.",
+      "interactions": "Clicking wallet opens Add Funds drawer."
+    },
+    "MarketCard": {
+      "style": "Flat design, bg-white, border border-slate-200, rounded-xl, p-4. Grid layout inside for Open/Close times and Live Result.",
+      "typography": "Market Name in Outfit font-semibold text-lg. Live result in large, tabular-nums (e.g., text-3xl font-bold tracking-widest text-primary).",
+      "status": "Dynamic Play Button: Primary brand color if Open. Gray/Disabled if Closed."
+    },
+    "ScrollingNotice": {
+      "style": "bg-brand-gold_light text-brand-primary py-2 px-4 text-sm font-medium. Use react-fast-marquee."
+    },
+    "BottomNav": {
+      "style": "Fixed bottom, bg-white border-t border-slate-200. Flex justify-between, pb-safe.",
+      "icons": "Use Lucide React. Active state gets brand primary color, inactive is text-slate-400."
+    },
+    "AdminStatsCard": {
+      "style": "bg-white border border-slate-200 rounded-xl p-6. Big numbers in Outfit font-semibold text-3xl. Subtitle in text-sm text-slate-500."
+    },
+    "BetSlip": {
+      "style": "Drawer or fixed bottom sheet overlay. Clear input fields for digits, amount. High-contrast 'Place Bid' CTA."
+    }
+  },
+  "motion": {
+    "hover": "Subtle transform -translate-y-0.5 and shadow-md for cards.",
+    "click": "Scale down slightly (scale-95) for buttons.",
+    "transitions": "transition-all duration-200 ease-in-out."
+  },
+  "icons_library": "lucide-react",
+  "media": {
+    "images": [
+      {
+        "category": "texture",
+        "url": "https://images.unsplash.com/photo-1545873509-33e944ca7655?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwxfHxnb2xkJTIwYWJzdHJhY3QlMjB0ZXh0dXJlJTIwbGlnaHR8ZW58MHx8fHwxNzgwNjU1MTEwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Gold abstract texture for premium banners or VIP sections."
+      },
+      {
+        "category": "support_agent",
+        "url": "https://images.pexels.com/photos/7709255/pexels-photo-7709255.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Professional customer support agent for live chat/whatsapp contact section."
+      }
+    ]
+  },
+  "accessibility": {
+    "contrast": "Ensure all text against brand primary meets WCAG AA.",
+    "focus": "focus:ring-2 focus:ring-brand-primary focus:outline-none.",
+    "testing": "All interactive elements MUST have data-testid attributes."
+  },
+  "instructions_to_main_agent": [
+    "Implement the UI using a mobile-first approach. For the user app, simulate a mobile viewport (e.g., max-w-md mx-auto, hidden scrollbars) with a fixed bottom navigation.",
+    "For the admin panel, use a desktop-first dashboard layout with a sidebar.",
+    "Use 'Outfit' for all headings and 'DM Sans' for body text. Link the fonts in index.html.",
+    "Ensure the Market List Cards clearly display Open/Close times and the Live Result in a prominent, easily readable format.",
+    "Implement Shadcn UI components for complex interactions like Drawers, Modals, Tabs, and Tables.",
+    "The styling must strictly avoid purple/teal gradients and dark casino themes. Stick to the crisp white, slate grays, and vibrant orange/gold.",
+    "Use Lucide-react for all icons."
+  ]
+}
