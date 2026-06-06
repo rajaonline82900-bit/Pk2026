@@ -46,11 +46,6 @@ async def seed_all(db):
         })
     elif not existing.get("id"):
         await db.users.update_one({"email": admin_email}, {"$set": {"id": str(uuid.uuid4())}})
-    elif not bcrypt.checkpw(admin_password.encode("utf-8"), existing["password_hash"].encode("utf-8")):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}},
-        )
 
     # ----- Test user -----
     test_mobile = "9999999999"
