@@ -60,10 +60,17 @@ fi
 npm install -g yarn pm2 >/dev/null
 ok "Node $(node -v), Yarn $(yarn -v), PM2 installed"
 
-# 4. PYTHON 3
-log "Step 4/10  Installing Python 3 + venv + Nginx + Git"
+# 4. PYTHON 3.11 (emergentintegrations requires Python <3.12)
+log "Step 4/10  Installing Python 3.11 + venv + Nginx + Git"
 apt-get install -y python3 python3-venv python3-pip python3-dev build-essential nginx git >/dev/null
-ok "Python $(python3 --version | cut -d' ' -f2), Nginx, Git ready"
+# Ubuntu 24.04 ships Python 3.12 — emergentintegrations needs <=3.11, so install via deadsnakes
+if ! command -v python3.11 >/dev/null; then
+  add-apt-repository -y ppa:deadsnakes/ppa >/dev/null 2>&1 || true
+  apt-get update -y >/dev/null
+  apt-get install -y python3.11 python3.11-venv python3.11-dev >/dev/null
+fi
+PYTHON_BIN="$(command -v python3.11 || command -v python3)"
+ok "Python $($PYTHON_BIN --version | cut -d' ' -f2), Nginx, Git ready"
 
 # 5. MONGODB 7
 log "Step 5/10  Installing MongoDB 7"
@@ -106,7 +113,9 @@ cd "$APP_DIR"
 # 7. BACKEND SETUP
 log "Step 7/10  Setting up FastAPI backend"
 cd "$APP_DIR/backend"
-python3 -m venv venv
+PYTHON_BIN="$(command -v python3.11 || command -v python3)"
+rm -rf venv
+"$PYTHON_BIN" -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
 pip install --upgrade pip --quiet
