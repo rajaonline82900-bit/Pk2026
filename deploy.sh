@@ -69,9 +69,9 @@ ok "Python $(python3 --version | cut -d' ' -f2), Nginx, Git ready"
 log "Step 5/10  Installing MongoDB 7"
 if ! command -v mongod >/dev/null; then
   UBUNTU_CODENAME=$(lsb_release -cs)
-  # Fallback to jammy if focal/older
+  # MongoDB 7.0 supports focal (20.04), jammy (22.04), noble (24.04)
   case "$UBUNTU_CODENAME" in
-    jammy|focal) ;;
+    focal|jammy|noble) ;;
     *) UBUNTU_CODENAME="jammy" ;;
   esac
   curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
