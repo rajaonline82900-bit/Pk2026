@@ -155,6 +155,7 @@ cd "$APP_DIR/backend"
 pm2 delete m11-api >/dev/null 2>&1 || true
 pm2 start "$APP_DIR/backend/venv/bin/uvicorn" \
   --name m11-api \
+  --interpreter none \
   --cwd "$APP_DIR/backend" \
   -- server:app --host 0.0.0.0 --port 8001
 pm2 save >/dev/null
