@@ -110,7 +110,7 @@ python3 -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
 pip install --upgrade pip --quiet
-pip install -r requirements.txt --quiet
+pip install -r requirements.txt --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ --quiet
 # Build .env (preserve existing JWT_SECRET if present)
 if [ -f .env ] && grep -q "^JWT_SECRET=" .env; then
   JWT_SECRET=$(grep "^JWT_SECRET=" .env | cut -d= -f2-)
