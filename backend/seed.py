@@ -12,18 +12,12 @@ def hash_password(plain: str) -> str:
 
 
 DEFAULT_MARKETS = [
-    {"name": "SRIDEVI MORNING",   "open_time": "10:00", "close_time": "11:00"},
-    {"name": "KALYAN MORNING",    "open_time": "11:00", "close_time": "12:00"},
-    {"name": "MILAN MORNING",     "open_time": "10:15", "close_time": "11:15"},
-    {"name": "TIME BAZAR",        "open_time": "13:00", "close_time": "14:00"},
-    {"name": "MADHUR DAY",        "open_time": "13:30", "close_time": "14:30"},
-    {"name": "SRIDEVI",           "open_time": "15:30", "close_time": "16:30"},
-    {"name": "KALYAN",            "open_time": "16:00", "close_time": "18:00"},
-    {"name": "MILAN DAY",         "open_time": "15:00", "close_time": "17:00"},
-    {"name": "RAJDHANI DAY",      "open_time": "15:00", "close_time": "17:00"},
-    {"name": "MILAN NIGHT",       "open_time": "21:00", "close_time": "23:00"},
-    {"name": "RAJDHANI NIGHT",    "open_time": "21:30", "close_time": "23:30"},
-    {"name": "MAIN BAZAR",        "open_time": "21:35", "close_time": "23:55"},
+    {"name": "DESAWAR",      "open_time": "06:00", "close_time": "04:00"},
+    {"name": "DELHI BAZAR",  "open_time": "06:00", "close_time": "15:00"},
+    {"name": "SHREE GANESH", "open_time": "06:00", "close_time": "16:35"},
+    {"name": "FARIDABAD",    "open_time": "06:00", "close_time": "18:00"},
+    {"name": "GHAZIABAD",    "open_time": "06:00", "close_time": "20:30"},
+    {"name": "GALI",         "open_time": "06:00", "close_time": "23:30"},
 ]
 
 
@@ -113,6 +107,11 @@ async def seed_all(db):
         })
     else:
         patch = {}
+        # Force-update game_rates if they contain old game keys (post game-system migration)
+        existing_rates = settings.get("game_rates") or {}
+        new_rates = default_game_rates()
+        if set(existing_rates.keys()) != set(new_rates.keys()):
+            patch["game_rates"] = new_rates
         for k, v in [
             ("telegram_url", "https://t.me/m11clube"),
             ("withdraw_open_time", "08:00"),

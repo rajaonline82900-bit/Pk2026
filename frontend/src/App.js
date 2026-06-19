@@ -12,7 +12,9 @@ import AdminLogin from "./pages/AdminLogin";
 
 import Dashboard from "./pages/Dashboard";
 import MarketDetail from "./pages/MarketDetail";
-import GameScreen from "./pages/GameScreen";
+import JodiBetPage from "./pages/games/JodiBetPage";
+import HarufPage from "./pages/games/HarufPage";
+import CrossBetPage from "./pages/games/CrossBetPage";
 import MyBids from "./pages/MyBids";
 import Passbook from "./pages/Passbook";
 import Funds from "./pages/Funds";
@@ -28,6 +30,7 @@ import {
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarkets from "./pages/admin/AdminMarkets";
 import AdminResults from "./pages/admin/AdminResults";
+import AdminJantri from "./pages/admin/AdminJantri";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminBids from "./pages/admin/AdminBids";
@@ -50,7 +53,9 @@ function App() {
             {/* User app */}
             <Route path="/" element={<UserGuard><Dashboard /></UserGuard>} />
             <Route path="/market/:id" element={<UserGuard><MarketDetail /></UserGuard>} />
-            <Route path="/market/:id/game/:gameKey" element={<UserGuard><GameScreen /></UserGuard>} />
+            <Route path="/market/:id/game/jodi" element={<UserGuard><JodiBetPage /></UserGuard>} />
+            <Route path="/market/:id/game/haruf" element={<UserGuard><HarufPage /></UserGuard>} />
+            <Route path="/market/:id/game/cross_bet" element={<UserGuard><CrossBetPage /></UserGuard>} />
             <Route path="/my-bids" element={<UserGuard><MyBids /></UserGuard>} />
             <Route path="/passbook" element={<UserGuard><Passbook /></UserGuard>} />
             <Route path="/funds" element={<UserGuard><Funds /></UserGuard>} />
@@ -71,6 +76,7 @@ function App() {
             <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
             <Route path="/admin/markets" element={<AdminGuard><AdminMarkets /></AdminGuard>} />
             <Route path="/admin/results" element={<AdminGuard><AdminResults /></AdminGuard>} />
+            <Route path="/admin/jantri" element={<AdminGuard><AdminJantri /></AdminGuard>} />
             <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
             <Route path="/admin/users/:id" element={<AdminGuard><AdminUserDetail /></AdminGuard>} />
             <Route path="/admin/payments" element={<AdminGuard><AdminPayments /></AdminGuard>} />

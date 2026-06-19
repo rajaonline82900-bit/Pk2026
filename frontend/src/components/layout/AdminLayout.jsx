@@ -1,12 +1,13 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Calendar, Wallet, Settings, Megaphone, ListChecks, LogOut, Layers } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Wallet, Settings, Megaphone, ListChecks, LogOut, Layers, BarChart3 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 
 const ITEMS = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
   { to: "/admin/markets", icon: Layers, label: "Markets" },
   { to: "/admin/results", icon: Calendar, label: "Results" },
+  { to: "/admin/jantri", icon: BarChart3, label: "Jantri Report" },
   { to: "/admin/users", icon: Users, label: "Users" },
   { to: "/admin/payments", icon: Wallet, label: "Payments" },
   { to: "/admin/bids", icon: ListChecks, label: "All Bids" },

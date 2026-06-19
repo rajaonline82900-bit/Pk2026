@@ -157,6 +157,9 @@ class MarketUpdate(BaseModel):
 
 
 class ResultIn(BaseModel):
+    # New M11 format: 2-digit jodi result e.g. "37"
+    result: Optional[str] = None
+    # Legacy compat (still accepted from older admin builds)
     open_pana: Optional[str] = None
     close_pana: Optional[str] = None
 
@@ -452,15 +455,27 @@ def _market_open_status(m: dict, today_results: Optional[dict] = None) -> dict:
         ch, cm = map(int, close_t.split(":"))
         open_dt = now.replace(hour=oh, minute=om, second=0, microsecond=0)
         close_dt = now.replace(hour=ch, minute=cm, second=0, microsecond=0)
+        # Overnight market handling: if close_time < open_time, close belongs to NEXT day
+        if close_dt <= open_dt:
+            close_dt = close_dt + timedelta(days=1)
+        # If `now` is before today's open AND market wraps overnight, also accept yesterday's open window
+        # (i.e. user playing the close-window between midnight and close_time)
+        if now < open_dt and (ch, cm) < (oh, om):
+            yesterday_open = open_dt - timedelta(days=1)
+            yesterday_close = close_dt - timedelta(days=1)
+            if yesterday_open <= now < yesterday_close:
+                open_dt = yesterday_open
+                close_dt = yesterday_close
         m["is_open_session_active"] = now < open_dt and m.get("status") == "active"
         m["is_close_session_active"] = now < close_dt and m.get("status") == "active"
-        m["is_market_active"] = (now < close_dt) and m.get("status") == "active"
+        m["is_market_active"] = (open_dt <= now < close_dt) and m.get("status") == "active"
     except Exception:
         m["is_open_session_active"] = False
         m["is_close_session_active"] = False
         m["is_market_active"] = False
 
-    # Live result string from TODAY's results-collection row (date-aware)
+    # Live result for the day. New M11 format: result stored as 2-digit jodi "XY"
+    # in both open_pana and close_pana for simplicity. Legacy 3-digit panas also supported.
     op = None
     cp = None
     if today_results is not None:
@@ -469,21 +484,50 @@ def _market_open_status(m: dict, today_results: Optional[dict] = None) -> dict:
             op = r.get("open_pana")
             cp = r.get("close_pana")
     else:
-        # Fallback to cached on market doc (only if dated today)
         if m.get("result_date") == today_str:
             op = m.get("open_result")
             cp = m.get("close_result")
-    open_digit = sum(int(c) for c in op) % 10 if op else None
-    close_digit = sum(int(c) for c in cp) % 10 if cp else None
-    if op and cp and open_digit is not None and close_digit is not None:
-        m["live_result"] = f"{op}-{open_digit}{close_digit}-{cp}"
-    elif op and open_digit is not None:
-        m["live_result"] = f"{op}-{open_digit}*-***"
-    else:
-        m["live_result"] = "***-**-***"
-    m["result_date"] = today_str if (op or cp) else None
+
+    def _digit_from(v):
+        if not v:
+            return None
+        v = str(v).strip()
+        if len(v) == 2 and v.isdigit():
+            return None  # handled separately as jodi
+        if len(v) == 3 and v.isdigit():
+            return sum(int(c) for c in v) % 10
+        return None
+
+    today_jodi = None
+    if op and len(str(op).strip()) == 2 and str(op).strip().isdigit():
+        today_jodi = str(op).strip()
+    elif op and cp:
+        od = _digit_from(op)
+        cd = _digit_from(cp)
+        if od is not None and cd is not None:
+            today_jodi = f"{od}{cd}"
+
+    # Yesterday's result (for "Old" display)
+    yesterday_jodi = None
+    yr = m.get("_yesterday_result")
+    if yr:
+        if len(str(yr).strip()) == 2 and str(yr).strip().isdigit():
+            yesterday_jodi = str(yr).strip()
+        elif m.get("_yesterday_open") and m.get("_yesterday_close"):
+            od = _digit_from(m.get("_yesterday_open"))
+            cd = _digit_from(m.get("_yesterday_close"))
+            if od is not None and cd is not None:
+                yesterday_jodi = f"{od}{cd}"
+
+    m["today_result"] = today_jodi  # "37" or None
+    m["yesterday_result"] = yesterday_jodi  # "43" or None
+    m["live_result"] = today_jodi or "**"
+    m["result_date"] = today_str if today_jodi else None
     m["open_result"] = op
     m["close_result"] = cp
+    m.pop("_yesterday_result", None)
+    m.pop("_yesterday_open", None)
+    m.pop("_yesterday_close", None)
     return m
 
 
@@ -495,12 +539,29 @@ async def _fetch_today_results() -> dict:
     return out
 
 
+async def _fetch_yesterday_results() -> dict:
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    yesterday = (ist_now - timedelta(days=1)).strftime("%Y-%m-%d")
+    out = {}
+    async for r in db.results.find({"date": yesterday}):
+        out[r["market_id"]] = {"open_pana": r.get("open_pana"), "close_pana": r.get("close_pana")}
+    return out
+
+
 @api.get("/markets")
 async def list_markets():
     today_results = await _fetch_today_results()
+    yesterday_results = await _fetch_yesterday_results()
     out = []
     async for m in db.markets.find({}):
         m.pop("_id", None)
+        yr = yesterday_results.get(m.get("id"))
+        if yr:
+            m["_yesterday_open"] = yr.get("open_pana")
+            m["_yesterday_close"] = yr.get("close_pana")
+            # Compatibility: if both pana fields contain same 2-digit jodi
+            if yr.get("open_pana") and len(str(yr.get("open_pana"))) == 2:
+                m["_yesterday_result"] = yr.get("open_pana")
         out.append(_market_open_status(m, today_results))
     out.sort(key=lambda x: x.get("open_time", "99:99"))
     return out
@@ -777,13 +838,19 @@ async def admin_declare_result(market_id: str, payload: ResultIn, _: dict = Depe
         "close_pana": None,
         "declared_at": now_iso(),
     }
-    if payload.open_pana:
-        if not (payload.open_pana.isdigit() and len(payload.open_pana) == 3):
-            raise HTTPException(400, "open_pana must be 3 digits")
+    if payload.result:
+        # New 2-digit jodi format ("37"). Store digits in both pana fields for back-compat.
+        if not (payload.result.isdigit() and len(payload.result) == 2):
+            raise HTTPException(400, "result must be a 2-digit jodi (e.g. 37)")
+        row["open_pana"] = payload.result
+        row["close_pana"] = payload.result
+    if payload.open_pana and not payload.result:
+        if not (payload.open_pana.isdigit() and 2 <= len(payload.open_pana) <= 3):
+            raise HTTPException(400, "open_pana must be 2 or 3 digits")
         row["open_pana"] = payload.open_pana
-    if payload.close_pana:
-        if not (payload.close_pana.isdigit() and len(payload.close_pana) == 3):
-            raise HTTPException(400, "close_pana must be 3 digits")
+    if payload.close_pana and not payload.result:
+        if not (payload.close_pana.isdigit() and 2 <= len(payload.close_pana) <= 3):
+            raise HTTPException(400, "close_pana must be 2 or 3 digits")
         row["close_pana"] = payload.close_pana
     row["declared_at"] = now_iso()
     if existing:
@@ -902,6 +969,101 @@ async def admin_list_market_results(market_id: str, _: dict = Depends(require_ad
         r.pop("_id", None)
         out.append(r)
     return out
+
+
+@api.get("/admin/jantri-report")
+async def admin_jantri_report(
+    market_id: str,
+    date: Optional[str] = None,
+    game_type: str = "jodi",
+    _: dict = Depends(require_admin),
+):
+    """JANTRI BET Report — aggregated bet totals per number (00-99) for a market on a date.
+
+    Returns:
+      - grid: 10x10 2D array [[{"number":"00","total":int,"count":int}, ...], ...]
+      - totals: {"total_amount":int, "total_bids":int, "unique_numbers":int}
+      - top: list of top-5 numbers by amount (for quick risk view)
+    """
+    market = await db.markets.find_one({"id": market_id})
+    if not market:
+        raise HTTPException(404, "Market not found")
+    if not date:
+        date = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
+
+    # Build filter: for jodi mode include both 'jodi' and 'cross_bet' (both bet on 00-99)
+    game_types_filter = [game_type]
+    if game_type == "jodi":
+        game_types_filter = ["jodi", "cross_bet"]
+    elif game_type in ("haruf_andar", "haruf_bahar"):
+        # For haruf we return a 1x10 grid (digits 0-9)
+        pass
+
+    # Aggregate bets grouped by number
+    pipeline = [
+        {"$match": {
+            "market_id": market_id,
+            "result_date": date,
+            "game_type": {"$in": game_types_filter},
+        }},
+        {"$group": {
+            "_id": "$number",
+            "total": {"$sum": "$amount"},
+            "count": {"$sum": 1},
+        }},
+    ]
+    agg = {}
+    async for row in db.bids.aggregate(pipeline):
+        agg[str(row["_id"]).zfill(2)] = {"total": row["total"], "count": row["count"]}
+
+    if game_type in ("haruf_andar", "haruf_bahar"):
+        # 1D grid: digits 0-9
+        grid = []
+        for d in range(10):
+            key = str(d)
+            entry = agg.get(key) or agg.get(str(d).zfill(2)) or {"total": 0, "count": 0}
+            grid.append({"number": str(d), "total": entry["total"], "count": entry["count"]})
+        total_amount = sum(c["total"] for c in grid)
+        total_bids = sum(c["count"] for c in grid)
+        unique = sum(1 for c in grid if c["total"] > 0)
+        top = sorted([c for c in grid if c["total"] > 0], key=lambda x: -x["total"])[:5]
+        return {
+            "market_id": market_id,
+            "market_name": market.get("name"),
+            "date": date,
+            "game_type": game_type,
+            "shape": "1x10",
+            "grid_1d": grid,
+            "totals": {"total_amount": total_amount, "total_bids": total_bids, "unique_numbers": unique},
+            "top": top,
+        }
+
+    # Default: 10x10 grid for jodi (00-99)
+    grid = []
+    for row in range(10):
+        row_arr = []
+        for col in range(10):
+            num = f"{row}{col}"
+            entry = agg.get(num) or {"total": 0, "count": 0}
+            row_arr.append({"number": num, "total": entry["total"], "count": entry["count"]})
+        grid.append(row_arr)
+
+    total_amount = sum(c["total"] for r in grid for c in r)
+    total_bids = sum(c["count"] for r in grid for c in r)
+    unique = sum(1 for r in grid for c in r if c["total"] > 0)
+    flat = [c for r in grid for c in r if c["total"] > 0]
+    top = sorted(flat, key=lambda x: -x["total"])[:5]
+
+    return {
+        "market_id": market_id,
+        "market_name": market.get("name"),
+        "date": date,
+        "game_type": game_type,
+        "shape": "10x10",
+        "grid": grid,
+        "totals": {"total_amount": total_amount, "total_bids": total_bids, "unique_numbers": unique},
+        "top": top,
+    }
 
 
 @api.post("/admin/results/fetch")
