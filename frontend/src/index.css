@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +15,7 @@ a[href*="emergent.sh"][target="_blank"] {
 
 body {
   margin: 0;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #ffffff;
@@ -31,6 +31,89 @@ h1, h2, h3, h4, h5, h6, .font-display {
   font-variant-numeric: tabular-nums;
 }
 
+/* Royal Blue + Yellow theme — creative casino-royale palette */
+:root {
+  --royal-blue-50:  #eff6ff;
+  --royal-blue-500: #2563eb;
+  --royal-blue-700: #1d4ed8;
+  --royal-blue-900: #1e3a8a;
+  --royal-blue-950: #0c1e5e;
+  --gold-400:       #fbbf24;
+  --gold-500:       #f59e0b;
+  --gold-600:       #d97706;
+}
+
+/* Premium animated gradient background */
+.bg-royal-gradient {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
+}
+
+.bg-royal-radial {
+  background: radial-gradient(ellipse at top left, #2563eb 0%, #1e3a8a 50%, #0c1e5e 100%);
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.text-gold-shine {
+  background: linear-gradient(90deg, #fbbf24, #ffd700, #fbbf24, #ffd700);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shine 3s linear infinite;
+}
+
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-dark {
+  background: rgba(30, 58, 138, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+/* Premium pill button shine */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::before {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.6s;
+}
+.btn-shine:hover::before { left: 100%; }
+
+/* Animated glow pulse for live elements */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0); }
+}
+.pulse-gold { animation: pulse-gold 2s infinite; }
+
+/* Decorative grid pattern overlay */
+.pattern-grid {
+  background-image:
+    linear-gradient(rgba(251, 191, 36, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 191, 36, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -39,13 +122,13 @@ h1, h2, h3, h4, h5, h6, .font-display {
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 24 100% 50%;             /* M11 orange #FF7A00 */
+    --primary: 226 71% 40%;              /* Royal Blue #1d4ed8 */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 40 92% 55%;                /* gold */
+    --accent: 43 96% 56%;                /* Gold #fbbf24 */
     --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
