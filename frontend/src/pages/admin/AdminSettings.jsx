@@ -63,6 +63,18 @@ export default function AdminSettings() {
           <Field label="Min Withdraw (points)" type="number" value={s.min_withdraw ?? 500} onSave={(v)=>save({ min_withdraw: parseInt(v) })} testid="min-wd" />
         </Card>
 
+        <Card title="Tutorial Videos (YouTube)">
+          <p className="text-xs text-slate-500 mb-3">YouTube link daalo — "How to Play" button click karne par users ko ye videos dikhayi jayengi.</p>
+          <Field label="How to Play — YouTube URL" value={s.youtube_how_to_play || ""} onSave={(v)=>save({ youtube_how_to_play: v })} testid="yt-play" />
+          <Field label="How to Deposit — YouTube URL" value={s.youtube_how_to_deposit || ""} onSave={(v)=>save({ youtube_how_to_deposit: v })} testid="yt-deposit" />
+          <Field label="How to Withdraw — YouTube URL" value={s.youtube_how_to_withdraw || ""} onSave={(v)=>save({ youtube_how_to_withdraw: v })} testid="yt-withdraw" />
+        </Card>
+
+        <Card title="Refer & Earn">
+          <p className="text-xs text-slate-500 mb-3">Jab koi referred user pehli deposit kare, referrer ko deposit ka % bonus milta hai. 0 set karne se bonus band ho jaayega.</p>
+          <Field label="Referral % on First Deposit" type="number" value={s.referral_first_deposit_percent ?? 10} onSave={(v)=>save({ referral_first_deposit_percent: parseInt(v) || 0 })} testid="ref-percent" />
+        </Card>
+
         <Card title="Withdrawal Time Window (IST)">
           <p className="text-xs text-slate-500 mb-3">Users can only request withdrawals between these times. Set 00:00 / 23:59 to keep it always open.</p>
           <Field label="Open Time (HH:MM)" value={s.withdraw_open_time || "00:00"} onSave={(v)=>save({ withdraw_open_time: v })} testid="wd-open" />

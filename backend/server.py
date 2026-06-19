@@ -117,6 +117,7 @@ class RegisterIn(BaseModel):
     name: str = Field(..., min_length=2, max_length=60)
     password: Optional[str] = Field(None, min_length=4, max_length=60)
     mpin: Optional[str] = Field(None, min_length=4, max_length=60)  # legacy compat
+    referral_code: Optional[str] = None
 
 
 class LoginIn(BaseModel):
@@ -162,6 +163,8 @@ class ResultIn(BaseModel):
     # Legacy compat (still accepted from older admin builds)
     open_pana: Optional[str] = None
     close_pana: Optional[str] = None
+    # Optional: date to declare for (YYYY-MM-DD). Defaults to today (IST).
+    date: Optional[str] = None
 
 
 class BidItem(BaseModel):
@@ -246,6 +249,20 @@ async def register(payload: RegisterIn):
     if existing:
         raise HTTPException(400, "Mobile already registered")
     user_id = str(uuid.uuid4())
+    # Generate a unique 6-char referral code (M11 + 6 hex)
+    ref_code = ("M11" + uuid.uuid4().hex[:6]).upper()
+    # Ensure uniqueness (rare collision)
+    while await db.users.find_one({"referral_code": ref_code}):
+        ref_code = ("M11" + uuid.uuid4().hex[:6]).upper()
+
+    referred_by_id = None
+    if payload.referral_code:
+        rcode = payload.referral_code.strip().upper()
+        ref_user = await db.users.find_one({"referral_code": rcode})
+        if ref_user:
+            referred_by_id = ref_user.get("id")
+        # invalid codes are silently ignored (no error)
+
     doc = {
         "id": user_id,
         "mobile": payload.mobile,
@@ -255,6 +272,9 @@ async def register(payload: RegisterIn):
         "wallet_balance": 50,
         "status": "active",
         "created_at": now_iso(),
+        "referral_code": ref_code,
+        "referred_by": referred_by_id,
+        "first_deposit_completed": False,
     }
     await db.users.insert_one(doc)
     await db.transactions.insert_one({
@@ -825,7 +845,13 @@ async def admin_declare_result(market_id: str, payload: ResultIn, _: dict = Depe
     market = await db.markets.find_one({"id": market_id})
     if not market:
         raise HTTPException(404, "Market not found")
-    today = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
+    today_actual = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d")
+    # Date-aware declare: admin can pick any date (past corrections, future-pre-declare disallowed)
+    today = (payload.date or today_actual).strip()
+    if not (len(today) == 10 and today[4] == "-" and today[7] == "-"):
+        raise HTTPException(400, "date must be YYYY-MM-DD")
+    if today > today_actual:
+        raise HTTPException(400, "Cannot declare result for a future date")
 
     # Upsert today's row in results collection
     existing = await db.results.find_one({"market_id": market_id, "date": today})
@@ -1398,6 +1424,46 @@ async def imb_check_status(body: dict, user: dict = Depends(get_current_user)):
     return {"gateway": data, "transaction": txn}
 
 
+async def _credit_referrer_if_first_deposit(user_id: str, deposit_amount: int):
+    """If this user was referred and this is their first deposit, credit the referrer
+    with referral_first_deposit_percent% of the deposit. Idempotent."""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        return
+    if user.get("first_deposit_completed"):
+        return  # already credited (or no referrer)
+    referrer_id = user.get("referred_by")
+    # Mark first deposit done regardless (no double-credit even if referrer is gone)
+    await db.users.update_one({"id": user_id}, {"$set": {"first_deposit_completed": True}})
+    if not referrer_id:
+        return
+    settings = await db.settings.find_one({"key": "global"}) or {}
+    if not settings.get("referral_enabled", True):
+        return
+    pct = int(settings.get("referral_first_deposit_percent", 10))
+    bonus = int(deposit_amount * pct / 100)
+    if bonus <= 0:
+        return
+    await db.users.update_one({"id": referrer_id}, {"$inc": {"wallet_balance": bonus}})
+    await db.transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": referrer_id,
+        "type": "referral_bonus",
+        "amount": bonus,
+        "status": "approved",
+        "note": f"Referral bonus ({pct}%) — referee mobile *****{user.get('mobile','')[-4:]} deposited {deposit_amount}",
+        "referred_user_id": user_id,
+        "created_at": now_iso(),
+    })
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": referrer_id,
+        "title": "Referral Bonus 🎉",
+        "body": f"You earned {bonus} pts from your referral's first deposit!",
+        "created_at": now_iso(),
+    })
+
+
 async def _imb_credit_if_pending(order_id: str, gw_payload: dict):
     """Idempotently credit the user wallet for a completed IMB order."""
     t = await db.transactions.find_one({"imb_order_id": order_id})
@@ -1409,6 +1475,11 @@ async def _imb_credit_if_pending(order_id: str, gw_payload: dict):
         {"id": t["id"]},
         {"$set": {"status": "approved", "note": "Auto-credited via IMB Payment Gateway", "imb_gateway_payload": gw_payload, "settled_at": now_iso()}},
     )
+    # Award referral bonus on first deposit
+    try:
+        await _credit_referrer_if_first_deposit(t["user_id"], amount)
+    except Exception:
+        pass
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()),
         "user_id": t["user_id"],
@@ -1438,6 +1509,61 @@ async def imb_webhook(req: Request):
     elif status in ("FAILD", "FAIL", "FALSE", "FAILED"):
         await db.transactions.update_one({"imb_order_id": order_id, "status": "pending"}, {"$set": {"status": "rejected", "note": "IMB reported failed payment", "imb_gateway_payload": payload}})
     return {"ok": True}
+
+
+# ---------- Refer & Earn ----------
+@api.get("/users/me/referral")
+async def my_referral(user: dict = Depends(get_current_user)):
+    """Returns user's referral code + stats."""
+    code = user.get("referral_code")
+    if not code:
+        code = ("M11" + uuid.uuid4().hex[:6]).upper()
+        while await db.users.find_one({"referral_code": code}):
+            code = ("M11" + uuid.uuid4().hex[:6]).upper()
+        await db.users.update_one({"id": user["id"]}, {"$set": {"referral_code": code}})
+
+    settings = await db.settings.find_one({"key": "global"}) or {}
+    pct = int(settings.get("referral_first_deposit_percent", 10))
+    enabled = bool(settings.get("referral_enabled", True))
+
+    referred_count = await db.users.count_documents({"referred_by": user["id"]})
+    converted_count = await db.users.count_documents({"referred_by": user["id"], "first_deposit_completed": True})
+
+    total_earned = 0
+    async for tx in db.transactions.find({"user_id": user["id"], "type": "referral_bonus", "status": "approved"}):
+        total_earned += int(tx.get("amount") or 0)
+
+    return {
+        "referral_code": code,
+        "percent": pct,
+        "enabled": enabled,
+        "referred_count": referred_count,
+        "converted_count": converted_count,
+        "total_earned": total_earned,
+    }
+
+
+# ---------- Market result history (public) ----------
+@api.get("/markets/{market_id}/result-history")
+async def market_result_history(market_id: str, limit: int = 60):
+    market = await db.markets.find_one({"id": market_id})
+    if not market:
+        raise HTTPException(404, "Market not found")
+    rows = []
+    async for r in db.results.find({"market_id": market_id}).sort("date", -1).limit(limit):
+        r.pop("_id", None)
+        op = (r.get("open_pana") or "").strip()
+        cp = (r.get("close_pana") or "").strip()
+        jodi = None
+        if len(op) == 2 and op.isdigit():
+            jodi = op
+        elif len(op) == 3 and len(cp) == 3:
+            try:
+                jodi = f"{sum(int(c) for c in op) % 10}{sum(int(c) for c in cp) % 10}"
+            except Exception:
+                jodi = None
+        rows.append({"date": r.get("date"), "result": jodi or "**", "open_pana": op, "close_pana": cp})
+    return {"market_id": market_id, "market_name": market.get("name"), "history": rows}
 
 
 # ---------- Health ----------

@@ -11,6 +11,11 @@ export default function AdminResults() {
   const [markets, setMarkets] = useState([]);
   const [pending, setPending] = useState({});
   const [reversing, setReversing] = useState({});
+  const [resultDate, setResultDate] = useState(() => {
+    const d = new Date();
+    const ist = new Date(d.getTime() + 5.5 * 3600 * 1000);
+    return ist.toISOString().slice(0, 10);
+  });
 
   const load = () => api.get("/admin/markets").then(({ data }) => setMarkets(data));
   useEffect(() => { load(); }, []);
@@ -19,18 +24,18 @@ export default function AdminResults() {
     const val = pending[id];
     if (!val || !/^[0-9]{2}$/.test(val)) return toast.error("Jodi result must be 2 digits (00-99)");
     try {
-      const { data } = await api.post(`/admin/markets/${id}/result`, { result: val });
-      toast.success(`✅ Result ${val} declared · ${data.settled} bids settled, ${data.won} winners, ₹${data.payout_total} paid`);
+      const { data } = await api.post(`/admin/markets/${id}/result`, { result: val, date: resultDate });
+      toast.success(`✅ Result ${val} declared for ${resultDate} · ${data.settled} bids settled, ${data.won} winners, ₹${data.payout_total} paid`);
       setPending((p) => ({ ...p, [id]: "" }));
       load();
     } catch (e) { toast.error(formatApiError(e)); }
   };
 
   const reverse = async (id) => {
-    if (!window.confirm("Reverse today's result? All winning credits will be reverted and bids reset to pending.")) return;
+    if (!window.confirm("Reverse this date's result? All winning credits will be reverted and bids reset to pending.")) return;
     setReversing((s) => ({ ...s, [id]: true }));
     try {
-      const { data } = await api.post(`/admin/markets/${id}/reverse-result`, {});
+      const { data } = await api.post(`/admin/markets/${id}/reverse-result`, { date: resultDate });
       toast.success(`Reversed · ${data.reverted_bids} bids reset, ${data.refunded} pts refunded`);
       load();
     } catch (e) { toast.error(formatApiError(e)); }
@@ -40,10 +45,15 @@ export default function AdminResults() {
   return (
     <AdminLayout>
       <Toaster richColors position="top-center" />
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold">Operations</div>
           <h1 className="font-display font-bold text-3xl tracking-tight text-slate-900 mt-1">Jodi Result Declaration</h1>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#0f7a6a]" />
+          <span className="text-xs text-slate-500">Declaring for:</span>
+          <Input type="date" value={resultDate} onChange={(e) => setResultDate(e.target.value)} data-testid="result-date-picker" className="w-40 h-8 text-sm" />
         </div>
       </div>
 

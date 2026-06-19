@@ -25,8 +25,8 @@ const DRAWER_ITEMS = [
   { to: "/passbook",          icon: Receipt,     label: "Transaction History" },
   { to: "/my-bids?filter=won",icon: Trophy,      label: "Win History" },
   { to: "/rates",              icon: Star,       label: "Market Rate" },
+  { to: "/refer",              icon: Share2,     label: "Refer & Earn" },
   { to: "/support",            icon: HelpCircle, label: "Help & Guide" },
-  { to: "/share",              icon: Share2,     label: "Share" },
   { to: "/mpin",               icon: KeyRound,   label: "Change Password" },
 ];
 

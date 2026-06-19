@@ -15,6 +15,7 @@ import MarketDetail from "./pages/MarketDetail";
 import JodiBetPage from "./pages/games/JodiBetPage";
 import HarufPage from "./pages/games/HarufPage";
 import CrossBetPage from "./pages/games/CrossBetPage";
+import ReferEarn from "./pages/ReferEarn";
 import MyBids from "./pages/MyBids";
 import Passbook from "./pages/Passbook";
 import Funds from "./pages/Funds";
@@ -70,7 +71,8 @@ function App() {
             <Route path="/tutorials" element={<UserGuard><TutorialsPage /></UserGuard>} />
             <Route path="/idea" element={<UserGuard><IdeaPage /></UserGuard>} />
             <Route path="/settings" element={<UserGuard><SettingsPage /></UserGuard>} />
-            <Route path="/share" element={<UserGuard><SharePage /></UserGuard>} />
+            <Route path="/share" element={<UserGuard><ReferEarn /></UserGuard>} />
+            <Route path="/refer" element={<UserGuard><ReferEarn /></UserGuard>} />
 
             {/* Admin */}
             <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />

@@ -1,22 +1,29 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { toast, Toaster } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Gift } from "lucide-react";
 
 export default function Register() {
   const { register, formatApiError } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [search] = useSearchParams();
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [refCode, setRefCode] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const ref = (search.get("ref") || "").trim().toUpperCase();
+    if (ref) setRefCode(ref);
+  }, [search]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -25,7 +32,7 @@ export default function Register() {
     if (password.length < 4) return toast.error("Password min 4 characters");
     setLoading(true);
     try {
-      await register(mobile, name, password);
+      await register(mobile, name, password, refCode || undefined);
       toast.success("Welcome to M11 CLUBE!");
       navigate("/");
     } catch (e) { toast.error(formatApiError(e)); }
@@ -60,6 +67,11 @@ export default function Register() {
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-slate-600 flex items-center gap-1"><Gift className="w-3 h-3" /> Referral Code (optional)</Label>
+            <Input data-testid="register-refcode-input" value={refCode} onChange={(e) => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))} placeholder="M11XXXXXX" className="mt-1.5 h-11 font-mono tracking-widest" autoComplete="off" />
+            {refCode && <div className="text-xs text-emerald-600 mt-1">✓ You'll be referred by {refCode}</div>}
           </div>
           <Button type="submit" data-testid="register-submit-btn" disabled={loading} className="w-full h-11 btn-brand">{loading ? "…" : t("signup_btn")}</Button>
         </form>

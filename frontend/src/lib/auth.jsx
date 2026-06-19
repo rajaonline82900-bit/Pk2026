@@ -46,8 +46,8 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async (mobile, name, password) => {
-    const { data } = await api.post("/auth/register", { mobile, name, password });
+  const register = async (mobile, name, password, referral_code) => {
+    const { data } = await api.post("/auth/register", { mobile, name, password, referral_code });
     localStorage.setItem("m11_token", data.token);
     localStorage.setItem("m11_role", "user");
     setUser(data.user);
@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, admin, login, register, adminLogin, logout, refreshUser, setSessionFromResetToken, formatApiError }}>
+    <AuthContext.Provider value={{ user, admin, login, register, adminLogin, logout, refreshUser, refresh: refreshUser, setSessionFromResetToken, formatApiError }}>
       {children}
     </AuthContext.Provider>
   );

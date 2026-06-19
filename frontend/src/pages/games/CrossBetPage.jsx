@@ -18,21 +18,22 @@ export default function CrossBetPage() {
   const [market, setMarket] = useState(null);
   const [selected, setSelected] = useState([]); // ["1","2","3"]
   const [amount, setAmount] = useState(10);
+  const [mode, setMode] = useState("with_jodi"); // 'with_jodi' (includes 11,22,33) | 'jod_cut' (excludes pairs)
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { api.get(`/markets/${id}`).then(m => setMarket(m.data)); }, [id]);
 
-  // Auto-generated jodis: every ordered (a,b) pair including a==b → e.g. [1,2] → 11,12,21,22
+  // Auto-generated jodis based on mode
   const generatedJodis = useMemo(() => {
     const out = [];
     for (const a of selected) {
       for (const b of selected) {
+        if (mode === "jod_cut" && a === b) continue; // exclude pairs in Jod Cut mode
         out.push(`${a}${b}`);
       }
     }
-    // de-dup (selected list already uniq, but safety)
     return Array.from(new Set(out));
-  }, [selected]);
+  }, [selected, mode]);
 
   const totalBet = useMemo(() => generatedJodis.length * (Number(amount) || 0), [generatedJodis, amount]);
 
@@ -84,7 +85,27 @@ export default function CrossBetPage() {
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[12px] text-amber-900 mb-3">
-        Multiple digits select karo (jaise 1, 2, 3) — sare combinations (11, 22, 33, 12, 13, 21, 23, 31, 32) automatic ban jaayenge. Pairs (11/22/33) bhi include hote hain.
+        Multiple digits select karo. Phir mode choose karo:
+        <strong> With Jodi</strong> = pairs (11, 22, 33) include hote hain ·
+        <strong> Jod Cut</strong> = pairs exclude (sirf cross combinations).
+      </div>
+
+      {/* Mode toggle */}
+      <div className="bg-white border border-slate-200 rounded-xl p-2 mb-3 flex gap-2" data-testid="cross-mode-toggle">
+        <button
+          onClick={() => setMode("with_jodi")}
+          data-testid="mode-with-jodi"
+          className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === "with_jodi" ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow" : "bg-slate-100 text-slate-600"}`}
+        >
+          With Jodi (incl. 11, 22, 33)
+        </button>
+        <button
+          onClick={() => setMode("jod_cut")}
+          data-testid="mode-jod-cut"
+          className={`flex-1 py-2 rounded-lg font-bold text-sm transition ${mode === "jod_cut" ? "bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow" : "bg-slate-100 text-slate-600"}`}
+        >
+          Jod Cut (no pairs)
+        </button>
       </div>
 
       {/* Digit selector */}

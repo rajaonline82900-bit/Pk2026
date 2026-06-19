@@ -1,17 +1,19 @@
 """Game logic for M11 CLUBE — simplified to 3 game types.
 
-Game types:
+Game types (post user-confirmed Andar/Bahar definition):
 - jodi:        Bet on 00-99. Wins if number == final jodi (open_digit+close_digit).
                Payout: 1:100  (₹10 bet → ₹1000 win)
-- haruf_andar: Bet on single digit 0-9. Wins if digit == close_digit (last digit of result).
-               Payout: 1:10   (₹100 bet → ₹1000 win)
-- haruf_bahar: Bet on single digit 0-9. Wins if digit == open_digit (first digit of result).
-               Payout: 1:10
-- cross_bet:   Frontend expands selection into multiple jodis (incl. pairs 11,22,33).
+- haruf_andar: Bet on single digit 0-9. Wins if digit == OPEN_DIGIT (first/pehla digit of result).
+               i.e. for jodi "12" → Andar = 1.  Payout: 1:10
+- haruf_bahar: Bet on single digit 0-9. Wins if digit == CLOSE_DIGIT (second/doosra digit).
+               i.e. for jodi "12" → Bahar = 2.  Payout: 1:10
+- cross_bet:   Frontend expands selection into multiple jodis.
+               Modes: 'with_jodi' (include pairs 11,22,33) / 'jod_cut' (exclude pairs).
                Stored individually with type='cross_bet'. Evaluated same as jodi.
                Payout: 1:100
 
-Result format: 2-digit string "XY" where X=open_digit, Y=close_digit. Stored in market.live_result.
+Result format: 2-digit string "XY" where X=open_digit (Andar), Y=close_digit (Bahar).
+Stored in market.live_result via results collection (both pana fields set to "XY").
 """
 from typing import Optional
 
@@ -68,19 +70,20 @@ def evaluate_bid(
     if game_type in ("jodi", "cross_bet"):
         return str(number).zfill(2) == jodi
 
-    if game_type == "haruf_bahar":
+    if game_type == "haruf_andar":
+        # Andar = first/open digit (e.g. jodi 12 → Andar = 1)
         try:
             return int(number) == open_digit
         except Exception:
             return False
 
-    if game_type == "haruf_andar":
+    if game_type == "haruf_bahar":
+        # Bahar = second/close digit (e.g. jodi 12 → Bahar = 2)
         try:
             return int(number) == close_digit
         except Exception:
             return False
 
-    # Unknown / legacy game types: not supported in the new system
     return False
 
 
