@@ -1,93 +1,113 @@
-# M11 CLUBE — Product Requirements & Deployment Status
+# M11 CLUBE — Product Requirements (v2 — Simplified Game System)
 
 ## Original Problem Statement
-Build a complete, responsive Matka Web Application "M11 CLUBE" with Admin Panel,
-multi-language support (Hindi/English/Punjabi/Urdu), bidding engine, IMB Payment Gateway,
-and full VPS deployment on Hostinger Ubuntu 24.04.
+Build "M11 CLUBE" — a Matka web app with Admin Panel, IMB Payment Gateway,
+multi-language support, and Hostinger VPS deployment.
 
-## ✅ COMPLETED (as of Feb 6, 2026)
+## ✅ COMPLETED
 
-### Core App Features
-- React + FastAPI + MongoDB full-stack
-- Mobile + password authentication with OTP
-- Matka bidding engine: Single Digit, Jodi, Pana, Sangam
-- Markets, Results, Reverse Results
-- Admin Panel: Users, Markets, Results, Payments, Settings
+### Phase 1 — Initial Build (early Feb 2026)
+- React + FastAPI + MongoDB stack
+- Mobile + password auth with OTP
+- Admin Panel (Users, Markets, Results, Payments, Settings)
+- IMB Payment Gateway integration with overlay scanner
 - 4-language i18n (Hindi/English/Punjabi/Urdu)
-- IMB Payment Gateway with custom Hindi warning overlay
-- UPI intent links for Android wrapper
-- All Emergent branding scrubbed
-- Wallet, deposits, withdrawals
+- Hostinger VPS deployment script (`/app/deploy.sh`)
+- HTTPS via Let's Encrypt SSL
+- Live at **https://m11cloube.com** (Hostinger VPS 69.62.73.188)
 
-### Deployment (Feb 6, 2026)
-- **Live URL**: https://m11cloube.com (and www.m11cloube.com)
-- **VPS**: Hostinger Ubuntu 24.04, IP 69.62.73.188
-- **Stack**: Nginx + PM2 + MongoDB 7 + Python 3.11 + Node.js 20
-- **SSL**: Let's Encrypt certificate (auto-renewal)
-- **Code repo**: github.com/rajaonline82900-bit/Pk2026 (branch: conflict_060626_1334)
-- **Deploy script**: `/app/deploy.sh` (idempotent, one-command deploy)
+### Phase 2 — Game System Redesign (Feb 19, 2026)
+**User requested**: Remove ALL old game types, keep only 3:
 
-### Key Files
-- `/app/deploy.sh` — Production VPS deployment automation
-- `/app/backend/server.py` — FastAPI core
-- `/app/backend/seed.py` — Initial DB seeding (admin, settings, IMB token)
-- `/app/frontend/src/pages/DepositPage.jsx` — IMB scanner overlay
-- `/app/frontend/public/index.html` — Defensive anti-branding scripts
+1. **Jodi Bet (00-99)** — Rate 1:100 (₹10 → ₹1000)
+   - Multiple numbers selectable, different amounts per number
+   - Grid UI: 5 cols × 20 rows, ₹ input per cell
 
-### Test Credentials
-- Admin: `admin@m11clube.com` / `admin123`
-- User: Mobile `9999999999` / Password `1234`
+2. **Haruf** — Rate 1:10 (₹100 → ₹1000)
+   - Andar = last digit of result (0-9)
+   - Bahar = first digit of result (0-9)
+   - Both sides bettable in same submission
 
-## 🟡 Pending / Future Tasks
+3. **Cross Bet** — Rate 1:100 (per generated jodi)
+   - User selects multiple digits (e.g., 1, 2, 3)
+   - Auto-generates: 11, 12, 13, 21, 22, 23, 31, 32, 33 (includes pairs)
+   - Single amount × N jodis = total
 
-- Update IMB Partner Dashboard webhook URL to `https://m11cloube.com/api/webhooks/imb`
-- Switch IMB from STAGE (`secure-stage.imb.org.in`) to LIVE endpoint when ready
-- "Continue Playing" CTA after successful deposit (P2)
-- Telegram bot notifications for admin (deposit/result events)
-- Mobile app wrapper (Android APK with UPI intent)
+**Result entry simplified**: Admin enters 2-digit jodi (e.g., "37").
+Backward-compat with legacy 3-digit panas retained in game_logic.
 
-## Tech Stack
-- Frontend: React 18 (CRA build), Tailwind, Shadcn/UI
-- Backend: FastAPI, motor (async MongoDB), bcrypt, JWT
-- Database: MongoDB 7
-- Hosting: Hostinger VPS (Ubuntu 24.04)
-- Reverse Proxy: Nginx
-- Process Manager: PM2 (--interpreter none for Python uvicorn)
-- SSL: Let's Encrypt via Certbot (--nginx plugin)
+### Phase 2 — Admin Panel Additions
+- **AdminResults** simplified: single 2-digit jodi input per market
+- **AdminJantri** (new): JANTRI BET Report
+  - 10x10 grid for jodi/cross_bet (00-99)
+  - 1x10 grid for haruf_andar / haruf_bahar (0-9)
+  - Top-5 highest-risk numbers
+  - Filters: market + date + game type
+  - Endpoint: `GET /api/admin/jantri-report?market_id=&date=&game_type=`
 
-## Deployment Architecture
-```
-[Internet]
-   |
-   ▼ HTTPS (443)
-[Nginx] — m11cloube.com / www.m11cloube.com
-   ├── /api/  →  PM2 → uvicorn → FastAPI :8001
-   └── /*     →  /var/www/m11/frontend/build (React)
-                              |
-                              ▼
-                       [MongoDB :27017]
-```
+### Phase 2 — UI Redesign (Raj Shree style)
+- Teal/green header (`#0f7a6a`) + orange accents
+- 4 circular action buttons: Withdraw, Add Money, Help (WhatsApp), Telegram
+- Orange "How to Play" banner
+- Teal "Fast Result" header
+- Market cards: Old/New jodi result boxes + green PLAY button
+- Open/Close times displayed
+- Bottom nav: My Bids | Passbook | Home | Funds | Game Rate
+- Sidebar drawer: Home, My Profile, Withdraw, Bid/Trx/Win History, Market Rate, Help, Share, Change Password, Logout
 
-## Critical Deployment Lessons (for future agents)
-1. Ubuntu 24.04 ships Python 3.12 — but `emergentintegrations==0.2.0` needs Python ≤3.11.
-   Install Python 3.11 via deadsnakes PPA.
-2. PM2 + Python: Must use `--interpreter none` flag or PM2 tries to run with Node.
-3. emergentintegrations: install with `--extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/`
-4. Frontend build needs `NODE_OPTIONS="--max-old-space-size=1536"` on low-RAM VPS.
-5. Defensive anti-Emergent scripts in `index.html` can break React mount — strip them from `build/index.html` post-build.
-6. Nginx must serve from `/var/www/...` not `/root/...` (root inaccessible to nginx user).
-7. MongoDB settings collection seeded only on FIRST run — manually `db.settings.updateOne` for IMB token if missing.
+### Phase 2 — Default Markets Updated
+- DESAWAR (06:00 → 04:00, overnight)
+- DELHI BAZAR (06:00 → 15:00)
+- SHREE GANESH (06:00 → 16:35)
+- FARIDABAD (06:00 → 18:00)
+- GHAZIABAD (06:00 → 20:30)
+- GALI (06:00 → 23:30)
 
-## Useful Commands
-```bash
-# VPS Maintenance
-pm2 status
-pm2 logs m11-api --lines 50
-systemctl reload nginx
-certbot renew --dry-run
+Overnight market timing logic added in `_market_open_status`.
 
-# Update deployed code
-cd /var/www/m11 && git pull && cd frontend && \
-  NODE_OPTIONS="--max-old-space-size=1536" yarn build && \
-  systemctl reload nginx && pm2 restart m11-api
-```
+### Phase 2 — Blank Page Fix
+- Removed `<script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>`
+- Removed defensive Object.defineProperty title-locking script
+- These were blocking React mount on VPS deployment
+
+## Key Files
+
+### Backend
+- `backend/server.py` — FastAPI routes
+- `backend/game_logic.py` — 3 game types + evaluate_bid
+- `backend/seed.py` — Default markets + admin seed
+- `backend/.env` — MongoDB + JWT + IMB credentials
+
+### Frontend
+- `frontend/src/App.js` — Routes (replaced GameScreen with 3 pages)
+- `frontend/src/pages/Dashboard.jsx` — Raj Shree style
+- `frontend/src/pages/MarketDetail.jsx` — 3 game type cards
+- `frontend/src/pages/games/JodiBetPage.jsx`
+- `frontend/src/pages/games/HarufPage.jsx`
+- `frontend/src/pages/games/CrossBetPage.jsx`
+- `frontend/src/pages/admin/AdminResults.jsx`
+- `frontend/src/pages/admin/AdminJantri.jsx` (new)
+- `frontend/src/components/layout/MobileLayout.jsx` (teal redesign)
+- `frontend/src/components/layout/AdminLayout.jsx` (+Jantri nav item)
+- `frontend/public/index.html` (defensive scripts removed)
+
+### Deployment
+- `/app/deploy.sh` — VPS one-shot installer
+- VPS: Hostinger Ubuntu 24.04, IP 69.62.73.188
+- Domain: m11cloube.com (Let's Encrypt SSL)
+
+## Test Credentials
+See `/app/memory/test_credentials.md`
+
+## Verified API Flows (curl)
+- Place 5 bids (mixed game types) → 5 settled, 4 won, ₹8500 paid
+- JANTRI report: aggregates by number, top-5 risk view
+- Market 'closed' for overnight markets fixed
+
+## P0 / P1 / P2 Backlog
+- **P1**: Redeploy to VPS m11cloube.com (push GitHub → run `bash /tmp/deploy.sh`)
+- **P1**: Update IMB Partner Dashboard webhook URL to `https://m11cloube.com/api/webhooks/imb`
+- **P2**: Switch IMB from STAGE to LIVE endpoint when ready for real payments
+- **P2**: Telegram bot notifications (deposit/result alerts to admin)
+- **P2**: Android APK wrapper with UPI intent
+- **P3**: IMB integration via `integration_playbook_expert_v2` (proper compliance)

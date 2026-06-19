@@ -25,7 +25,6 @@
         -->
         <title>M11 CLUBE</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
-        <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -41,40 +40,5 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
         <a id="emergent-badge" aria-hidden="true" tabindex="-1" style="display:none !important;visibility:hidden !important;pointer-events:none !important;width:0 !important;height:0 !important;opacity:0 !important;position:absolute !important;left:-9999px !important;"></a>
-        <script>
-          // Defensive M11 CLUBE branding guard — neutralise any platform-injected Emergent badge.
-          (function() {
-            // Lock title via Object.defineProperty so any script trying to set it gets ignored
-            try {
-              var _t = "M11 CLUBE";
-              Object.defineProperty(document, 'title', {
-                get: function() { return _t; },
-                set: function(v) { /* silently swallow non-M11 titles */ if (v && v.toLowerCase().indexOf("emergent") === -1 && v.length > 0) { _t = v; } document.querySelector('title') && (document.querySelector('title').textContent = _t); },
-                configurable: false,
-              });
-              document.querySelector('title') && (document.querySelector('title').textContent = _t);
-            } catch(e) {}
-
-            function killBadge() {
-              try {
-                document.querySelectorAll('#emergent-badge, a[href*="emergent.sh"], a[href*="emergent.com"]').forEach(function(el){
-                  el.innerHTML = "";
-                  el.removeAttribute("href");
-                  el.removeAttribute("target");
-                  el.setAttribute("aria-hidden", "true");
-                  el.setAttribute("tabindex", "-1");
-                  el.style.cssText = "display:none !important;visibility:hidden !important;pointer-events:none !important;width:0 !important;height:0 !important;opacity:0 !important;position:absolute !important;left:-9999px !important;";
-                });
-              } catch(e) {}
-            }
-            killBadge();
-            try {
-              var mo = new MutationObserver(killBadge);
-              mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-            } catch(e) {}
-            window.addEventListener("load", killBadge);
-            setInterval(killBadge, 1500);
-          })();
-        </script>
     </body>
 </html>
