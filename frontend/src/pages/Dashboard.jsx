@@ -158,34 +158,45 @@ function MarketCard({ m, onChart }) {
   const yesterday = m.yesterday_result || "**";
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm" data-testid={`market-card-${m.id}`}>
-      <div className="flex items-center px-3 py-3 gap-2">
-        <button onClick={onChart} data-testid={`market-chart-${m.id}`} className="shrink-0 active:scale-90 transition" aria-label="Result history">
+      <div className="grid grid-cols-[44px_1fr_auto_88px] items-center px-3 py-3 gap-2.5">
+        {/* Chart icon */}
+        <button onClick={onChart} data-testid={`market-chart-${m.id}`} className="active:scale-90 transition" aria-label="Result history">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0f7a6a] to-emerald-500 text-white flex items-center justify-center shadow">
             <BarChart3 className="w-5 h-5" strokeWidth={2.5} />
           </div>
         </button>
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-slate-900 text-base leading-tight" data-testid="market-name">{m.name}</div>
+
+        {/* Market name + chart link */}
+        <div className="min-w-0">
+          <div className="font-display font-bold text-slate-900 text-base leading-tight truncate" data-testid="market-name">{m.name}</div>
           <button onClick={onChart} className="text-[10px] text-[#0f7a6a] font-semibold mt-0.5" data-testid={`view-chart-${m.id}`}>VIEW CHART →</button>
         </div>
-        <div className="flex items-center gap-1.5">
+
+        {/* Old / arrow / New */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="text-center">
-            <div className="bg-gradient-to-br from-rose-500 to-pink-600 text-white font-bold text-lg w-12 h-10 flex items-center justify-center rounded-md leading-none shadow" data-testid="market-old">{yesterday}</div>
+            <div className="bg-gradient-to-br from-rose-500 to-pink-600 text-white font-bold text-base w-11 h-9 flex items-center justify-center rounded-md leading-none shadow" data-testid="market-old">{yesterday}</div>
             <div className="text-[9px] text-slate-500 mt-0.5 font-semibold">OLD</div>
           </div>
-          <ArrowUpRight className="w-4 h-4 text-slate-400" />
+          <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 self-start mt-2" />
           <div className="text-center">
-            <div className="bg-gradient-to-br from-[#0f7a6a] to-emerald-500 text-white font-bold text-lg w-12 h-10 flex items-center justify-center rounded-md leading-none shadow" data-testid="market-new">{today}</div>
+            <div className="bg-gradient-to-br from-[#0f7a6a] to-emerald-500 text-white font-bold text-base w-11 h-9 flex items-center justify-center rounded-md leading-none shadow" data-testid="market-new">{today}</div>
             <div className="text-[9px] text-slate-500 mt-0.5 font-semibold">NEW</div>
           </div>
         </div>
-        {playable ? (
-          <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="bg-gradient-to-br from-emerald-500 to-green-600 text-white text-sm font-bold px-3 py-2 rounded-md inline-flex items-center gap-1 active:scale-95 transition shadow">
-            PLAY <Play className="w-3.5 h-3.5 fill-white" />
-          </Link>
-        ) : (
-          <span data-testid={`timeout-btn-${m.id}`} className="bg-gradient-to-br from-rose-500 to-red-600 text-white text-xs font-bold px-3 py-2 rounded-md shadow">⏰ TIME OUT</span>
-        )}
+
+        {/* Action button (PLAY or TIME OUT) — fixed width 88px so layout stays aligned */}
+        <div className="w-[88px] flex justify-end">
+          {playable ? (
+            <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="w-full bg-gradient-to-br from-emerald-500 to-green-600 text-white text-sm font-bold rounded-md inline-flex items-center justify-center gap-1 h-10 active:scale-95 transition shadow">
+              PLAY <Play className="w-3.5 h-3.5 fill-white" />
+            </Link>
+          ) : (
+            <span data-testid={`timeout-btn-${m.id}`} className="w-full bg-gradient-to-br from-rose-500 to-red-600 text-white text-[11px] font-bold rounded-md inline-flex items-center justify-center gap-1 h-10 shadow">
+              <span>⏰</span> TIME OUT
+            </span>
+          )}
+        </div>
       </div>
       <div className="bg-gradient-to-r from-[#0f7a6a] to-emerald-600 text-white text-center text-xs font-semibold py-1.5 flex items-center justify-center gap-4">
         <span>OPEN: {format12(m.open_time)}</span>
