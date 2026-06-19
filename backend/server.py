@@ -805,10 +805,19 @@ async def admin_dashboard(_: dict = Depends(require_admin)):
 
 @api.get("/admin/markets")
 async def admin_list_markets(_: dict = Depends(require_admin)):
+    today_results = await _fetch_today_results()
+    yesterday_results = await _fetch_yesterday_results()
     out = []
     async for m in db.markets.find({}):
         m.pop("_id", None)
-        out.append(m)
+        yr = yesterday_results.get(m.get("id"))
+        if yr:
+            m["_yesterday_open"] = yr.get("open_pana")
+            m["_yesterday_close"] = yr.get("close_pana")
+            if yr.get("open_pana") and len(str(yr.get("open_pana"))) == 2:
+                m["_yesterday_result"] = yr.get("open_pana")
+        out.append(_market_open_status(m, today_results))
+    out.sort(key=lambda x: x.get("open_time", "99:99"))
     return out
 
 
@@ -832,7 +841,25 @@ async def admin_update_market(market_id: str, payload: MarketUpdate, _: dict = D
 @api.delete("/admin/markets/{market_id}")
 async def admin_delete_market(market_id: str, _: dict = Depends(require_admin)):
     await db.markets.delete_one({"id": market_id})
+    # Also clean up related results & bids (orphaned data)
+    await db.results.delete_many({"market_id": market_id})
     return {"ok": True}
+
+
+@api.post("/admin/markets/cleanup-defaults")
+async def admin_cleanup_to_defaults(_: dict = Depends(require_admin)):
+    """Removes all markets NOT in the current DEFAULT_MARKETS list.
+    Useful after a market-list redesign to delete legacy markets.
+    """
+    from seed import DEFAULT_MARKETS
+    keep_names = {m["name"].upper() for m in DEFAULT_MARKETS}
+    deleted = 0
+    async for m in db.markets.find({}):
+        if str(m.get("name", "")).upper() not in keep_names:
+            await db.markets.delete_one({"id": m["id"]})
+            await db.results.delete_many({"market_id": m["id"]})
+            deleted += 1
+    return {"ok": True, "deleted": deleted, "kept": list(keep_names)}
 
 
 @api.post("/admin/markets/{market_id}/result")

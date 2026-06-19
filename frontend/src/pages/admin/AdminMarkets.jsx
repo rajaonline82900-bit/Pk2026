@@ -38,20 +38,34 @@ export default function AdminMarkets() {
     catch (e) { toast.error(formatApiError(e)); }
   };
 
+  const cleanupDefaults = async () => {
+    if (!window.confirm("Saare purane markets (default list mein nahi hain) delete kar denge. Sahi hai?")) return;
+    try {
+      const { data } = await api.post("/admin/markets/cleanup-defaults", {});
+      toast.success(`${data.deleted} purane markets delete kar diye`);
+      load();
+    } catch (e) { toast.error(formatApiError(e)); }
+  };
+
   return (
     <AdminLayout>
       <Toaster richColors position="top-center" />
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold">Management</div>
           <h1 className="font-display font-bold text-3xl tracking-tight text-slate-900 mt-1">Markets</h1>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="add-market-btn" onClick={()=>setEditing({...empty})} className="btn-brand"><Plus className="w-4 h-4 mr-1" /> Add Market</Button>
-          </DialogTrigger>
-          <MarketDialog editing={editing} setEditing={setEditing} save={save} />
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Button data-testid="cleanup-defaults-btn" onClick={cleanupDefaults} variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50">
+            <Trash2 className="w-4 h-4 mr-1" /> Cleanup Old Markets
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="add-market-btn" onClick={()=>setEditing({...empty})} className="btn-brand"><Plus className="w-4 h-4 mr-1" /> Add Market</Button>
+            </DialogTrigger>
+            <MarketDialog editing={editing} setEditing={setEditing} save={save} />
+          </Dialog>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden" data-testid="markets-table">
