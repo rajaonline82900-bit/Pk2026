@@ -190,51 +190,49 @@ function MarketCard({ m, onChart }) {
   const yesterday = m.yesterday_result || "**";
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition" data-testid={`market-card-${m.id}`}>
-      <div className="grid grid-cols-[44px_1fr_auto_92px] items-center px-3 py-3 gap-2.5">
-        {/* Chart icon */}
-        <button onClick={onChart} data-testid={`market-chart-${m.id}`} className="active:scale-90 transition" aria-label="Result history">
-          <div className="w-10 h-10 rounded-xl bg-royal-radial text-yellow-400 flex items-center justify-center shadow-lg relative overflow-hidden">
+      {/* Top row: Chart icon + FULL market name */}
+      <div className="flex items-center gap-3 px-3 pt-3 pb-2">
+        <button onClick={onChart} data-testid={`market-chart-${m.id}`} className="active:scale-90 transition shrink-0" aria-label="Result history">
+          <div className="w-11 h-11 rounded-xl bg-royal-radial text-yellow-400 flex items-center justify-center shadow-lg relative overflow-hidden">
             <div className="absolute inset-0 pattern-grid opacity-30" />
             <BarChart3 className="w-5 h-5 relative" strokeWidth={2.5} />
           </div>
         </button>
-
-        {/* Market name */}
-        <div className="min-w-0">
-          <div className="font-display font-black text-blue-900 text-base leading-tight truncate" data-testid="market-name">{m.name}</div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-black text-blue-900 text-lg leading-tight" data-testid="market-name">{m.name}</div>
           <button onClick={onChart} className="text-[10px] text-yellow-600 font-bold mt-0.5 flex items-center gap-0.5" data-testid={`view-chart-${m.id}`}>
             <TrendingUp className="w-2.5 h-2.5" /> VIEW CHART
           </button>
         </div>
+      </div>
 
-        {/* Old / arrow / New */}
-        <div className="flex items-center gap-1.5 shrink-0">
+      {/* Bottom row: Old / arrow / New + Play button */}
+      <div className="flex items-center justify-between px-3 pb-3 gap-3">
+        <div className="flex items-center gap-2">
           <div className="text-center">
-            <div className="bg-gradient-to-br from-slate-600 to-slate-800 text-yellow-400 font-black text-base w-11 h-9 flex items-center justify-center rounded-lg leading-none shadow-md tabular-nums" data-testid="market-old">{yesterday}</div>
+            <div className="bg-gradient-to-br from-slate-700 to-slate-900 text-yellow-400 font-black text-lg w-14 h-10 flex items-center justify-center rounded-lg leading-none shadow-md tabular-nums" data-testid="market-old">{yesterday}</div>
             <div className="text-[9px] text-slate-500 mt-0.5 font-bold tracking-widest">OLD</div>
           </div>
-          <ArrowUpRight className="w-3.5 h-3.5 text-yellow-500 self-start mt-2" />
+          <ArrowUpRight className="w-4 h-4 text-yellow-500" />
           <div className="text-center">
-            <div className={`${playable ? "bg-gold-gradient text-blue-900 pulse-gold" : "bg-gradient-to-br from-slate-300 to-slate-400 text-white"} font-black text-base w-11 h-9 flex items-center justify-center rounded-lg leading-none shadow-md tabular-nums`} data-testid="market-new">{today}</div>
+            <div className={`${playable && today !== "**" ? "bg-gold-gradient text-blue-900 pulse-gold" : (today !== "**" ? "bg-gold-gradient text-blue-900" : "bg-gradient-to-br from-slate-300 to-slate-400 text-white")} font-black text-lg w-14 h-10 flex items-center justify-center rounded-lg leading-none shadow-md tabular-nums`} data-testid="market-new">{today}</div>
             <div className="text-[9px] text-slate-500 mt-0.5 font-bold tracking-widest">NEW</div>
           </div>
         </div>
 
-        {/* Action button */}
-        <div className="w-[92px] flex justify-end">
-          {playable ? (
-            <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="w-full bg-royal-radial text-yellow-400 text-sm font-black rounded-xl inline-flex items-center justify-center gap-1 h-10 active:scale-95 transition shadow-lg btn-shine relative overflow-hidden">
-              <span className="relative flex items-center gap-1">PLAY <Play className="w-3.5 h-3.5 fill-yellow-400" /></span>
-            </Link>
-          ) : (
-            <span data-testid={`timeout-btn-${m.id}`} className="w-full bg-gradient-to-br from-rose-500 to-red-700 text-white text-[11px] font-black rounded-xl inline-flex items-center justify-center gap-1 h-10 shadow-md">
-              ⏰ TIME OUT
-            </span>
-          )}
-        </div>
+        {playable ? (
+          <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="bg-royal-radial text-yellow-400 text-sm font-black rounded-xl inline-flex items-center justify-center gap-1.5 h-11 px-5 active:scale-95 transition shadow-lg btn-shine relative overflow-hidden">
+            <span className="relative flex items-center gap-1.5">PLAY <Play className="w-4 h-4 fill-yellow-400" /></span>
+          </Link>
+        ) : (
+          <span data-testid={`timeout-btn-${m.id}`} className="bg-gradient-to-br from-rose-500 to-red-700 text-white text-xs font-black rounded-xl inline-flex items-center justify-center gap-1 h-11 px-4 shadow-md">
+            ⏰ TIME OUT
+          </span>
+        )}
       </div>
+
       {/* Gold accent footer with times */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white text-center text-xs font-bold py-1.5 flex items-center justify-center gap-3 relative">
+      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white text-center text-xs font-bold py-2 flex items-center justify-center gap-3 relative">
         <div className="h-0.5 absolute top-0 left-0 right-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
         <span className="text-yellow-400">OPEN</span>
         <span className="tabular-nums">{format12(m.open_time)}</span>
