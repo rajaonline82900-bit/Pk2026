@@ -26,10 +26,20 @@ export function AuthProvider({ children }) {
         setAdmin(null);
       }
     } catch (e) {
-      localStorage.removeItem("m11_token");
-      localStorage.removeItem("m11_role");
-      setUser(null);
-      setAdmin(null);
+      // Only clear session for explicit auth failures (401/403).
+      // For network errors / 5xx, keep the token so user stays signed in
+      // when connectivity returns (fixes "back button logout" on slow WebView).
+      const status = e?.response?.status;
+      if (status === 401 || status === 403) {
+        localStorage.removeItem("m11_token");
+        localStorage.removeItem("m11_role");
+        setUser(null);
+        setAdmin(null);
+      } else {
+        // Network/server hiccup — preserve session, show as logged-out until next retry
+        setUser(null);
+        setAdmin(null);
+      }
     }
   }, []);
 

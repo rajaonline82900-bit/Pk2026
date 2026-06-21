@@ -6,7 +6,7 @@ export function UserGuard({ children }) {
   const { user } = useAuth();
   const location = useLocation();
   if (user === undefined) return <LoadingShell />;
-  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!user) return <Navigate to="/register" replace state={{ from: location }} />;
   return children;
 }
 
