@@ -42,8 +42,9 @@ export default function HarufPage() {
 
   async function submit() {
     if (!market?.is_market_active) return toast.error("Market is closed");
-    if (total <= 0) return toast.error("Bet amount enter karo");
-    if (total > (user?.wallet_balance || 0)) return toast.error("Insufficient wallet balance");
+    if (total <= 0) return toast.error("⚠️ Bet amount enter karo");
+    if (total < 10) return toast.error("⚠️ Minimum bet ₹10 hai. Kam se kam ₹10 ki bet lagao.");
+    if (total > (user?.wallet_balance || 0)) return toast.error(`⚠️ Wallet mein sirf ₹${user?.wallet_balance || 0} hai. ₹${total} ki bet ke liye paise kam hain.`);
 
     const bids = [
       ...Object.entries(bets.andar).filter(([_, v]) => Number(v) > 0).map(([d, a]) => ({ game_type: "haruf_andar", session: null, number: d, amount: Number(a) })),

@@ -23,7 +23,7 @@ export default function DepositPage() {
   const min = settings.min_deposit ?? 100;
 
   const proceed = async () => {
-    if (num < min) return toast.error(`Min deposit ${min}`);
+    if (num < min) return toast.error(`⚠️ Minimum deposit ₹${min} hai. Aapne ₹${num} daala — kam se kam ₹${min} daalo.`);
     setLoading(true);
     try {
       const { data } = await api.post("/wallet/deposit/imb-create", { amount: num });

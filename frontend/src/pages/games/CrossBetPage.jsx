@@ -43,9 +43,10 @@ export default function CrossBetPage() {
 
   async function submit() {
     if (!market?.is_market_active) return toast.error("Market is closed");
-    if (generatedJodis.length === 0) return toast.error("Kam se kam ek digit select karo");
-    if ((Number(amount) || 0) <= 0) return toast.error("Amount enter karo");
-    if (totalBet > (user?.wallet_balance || 0)) return toast.error("Insufficient wallet balance");
+    if (generatedJodis.length === 0) return toast.error("⚠️ Kam se kam ek digit select karo");
+    if ((Number(amount) || 0) <= 0) return toast.error("⚠️ Amount enter karo");
+    if ((Number(amount) || 0) < 10) return toast.error("⚠️ Per jodi minimum ₹10 hai. Amount badhao.");
+    if (totalBet > (user?.wallet_balance || 0)) return toast.error(`⚠️ Wallet mein sirf ₹${user?.wallet_balance || 0} hai. ₹${totalBet} ki bet ke liye paise kam hain.`);
 
     const bids = generatedJodis.map(j => ({
       game_type: "cross_bet",

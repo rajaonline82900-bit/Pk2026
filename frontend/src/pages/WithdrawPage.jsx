@@ -24,7 +24,7 @@ export default function WithdrawPage() {
   const num = parseInt(amount) || 0;
 
   const submit = async () => {
-    if (num < minW) return toast.error(`Min withdraw is ${minW}`);
+    if (num < minW) return toast.error(`⚠️ Minimum withdrawal ₹${minW} hai. Aapne ₹${num} request kiya — kam se kam ₹${minW} chahiye.`);
     const body = { amount: num, method };
     if (method === "upi") {
       if (upi.length < 4) return toast.error("Enter valid UPI ID");

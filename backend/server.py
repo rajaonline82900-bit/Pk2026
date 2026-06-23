@@ -181,7 +181,7 @@ class BidPlace(BaseModel):
 
 class DepositIn(BaseModel):
     amount: int
-    utr: str
+    utr: Optional[str] = ""
     method: str = "upi"
 
 
@@ -269,7 +269,7 @@ async def register(payload: RegisterIn):
         "name": payload.name,
         "password_hash": hash_pw(pw),
         "role": "user",
-        "wallet_balance": 50,
+        "wallet_balance": 0,
         "status": "active",
         "created_at": now_iso(),
         "referral_code": ref_code,
@@ -633,7 +633,7 @@ async def place_bid(payload: BidPlace, user: dict = Depends(get_current_user)):
             if b.session == "close" and not market.get("is_close_session_active"):
                 raise HTTPException(400, f"Close session closed for {market['name']}")
         if b.amount < 10:
-            raise HTTPException(400, "Minimum bid amount is 10 points")
+            raise HTTPException(400, f"⚠️ Minimum bet ₹10 hai. Aapne ₹{b.amount} ki bet lagayi — kam se kam ₹10 ki bet lagao.")
         bid_docs.append({
             "id": str(uuid.uuid4()),
             "user_id": user["id"],
@@ -688,8 +688,10 @@ async def passbook(user: dict = Depends(get_current_user), limit: int = 200):
 
 @api.post("/wallet/deposit")
 async def request_deposit(payload: DepositIn, user: dict = Depends(get_current_user)):
-    if payload.amount < 100:
-        raise HTTPException(400, "Minimum deposit is 100 points")
+    settings = await db.settings.find_one({"key": "global"}) or {}
+    min_d = settings.get("min_deposit", 100)
+    if payload.amount < min_d:
+        raise HTTPException(400, f"⚠️ Minimum deposit ₹{min_d} hai. Aapne ₹{payload.amount} daala — kam se kam ₹{min_d} daalo.")
     tid = str(uuid.uuid4())
     await db.transactions.insert_one({
         "id": tid,
@@ -709,10 +711,12 @@ async def request_deposit(payload: DepositIn, user: dict = Depends(get_current_u
 
 @api.post("/wallet/withdraw")
 async def request_withdraw(payload: WithdrawIn, user: dict = Depends(get_current_user)):
-    if payload.amount < 500:
-        raise HTTPException(400, "Minimum withdrawal is 500 points")
+    settings_pre = await db.settings.find_one({"key": "global"}) or {}
+    min_w = settings_pre.get("min_withdraw", 500)
+    if payload.amount < min_w:
+        raise HTTPException(400, f"⚠️ Minimum withdrawal ₹{min_w} hai. Aapne ₹{payload.amount} request kiya — kam se kam ₹{min_w} chahiye.")
     if user.get("wallet_balance", 0) < payload.amount:
-        raise HTTPException(400, "Insufficient balance")
+        raise HTTPException(400, f"⚠️ Aapke wallet mein sirf ₹{user.get('wallet_balance', 0)} hai. ₹{payload.amount} withdraw karne ke liye paise kam hain.")
     # Validate per-method payload
     account_info = {}
     if payload.method == "upi":
@@ -740,7 +744,7 @@ async def request_withdraw(payload: WithdrawIn, user: dict = Depends(get_current
             now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
             cur = dtime(now_ist.hour, now_ist.minute)
             if not (dtime(oh, om) <= cur <= dtime(ch, cm)):
-                raise HTTPException(400, f"Withdrawals allowed only between {wo} and {wc} IST")
+                raise HTTPException(400, f"⚠️ Withdrawal sirf {wo} se {wc} IST ke beech allowed hai. Abhi time se pehle/baad hai — please us window mein try karo.")
         except HTTPException:
             raise
         except Exception:
