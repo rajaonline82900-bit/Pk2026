@@ -49,6 +49,16 @@ function PaymentSection({ type }) {
     } catch (e) { toast.error(formatApiError(e)); }
   };
 
+  const retryImb = async (t) => {
+    if (!t.imb_order_id) return toast.error("Ye transaction IMB se nahi hai");
+    try {
+      const { data } = await api.post(`/admin/payments/retry-imb/${t.imb_order_id}`);
+      if (data.credited) toast.success("✅ IMB se status check kiya — wallet credit ho gaya!");
+      else toast.info(`IMB status: ${data.gateway?.status || "unknown"} — abhi success nahi mila`);
+      load();
+    } catch (e) { toast.error(formatApiError(e)); }
+  };
+
   const copy = async (text, label = "Copied") => {
     if (!text) return;
     await navigator.clipboard.writeText(text);
@@ -105,9 +115,12 @@ function PaymentSection({ type }) {
                   {t.status === "pending" ? (
                     <div className="inline-flex flex-col items-end gap-1.5 min-w-[260px]">
                       <Input className="w-full h-8 text-xs" placeholder="Note (optional)" value={notes[t.id] || ""} onChange={(e)=>setNotes(n=>({...n, [t.id]: e.target.value}))} data-testid={`note-${t.id}`} />
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 flex-wrap">
                         <Button data-testid={`approve-${t.id}`} onClick={()=>act(t.id, "approve")} className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"><CheckCircle2 className="w-3 h-3 mr-1" />Approve</Button>
                         <Button data-testid={`reject-${t.id}`} onClick={()=>act(t.id, "reject")} variant="outline" className="h-8 px-3 text-xs border-rose-200 text-rose-600 hover:bg-rose-50"><XCircle className="w-3 h-3 mr-1" />Reject</Button>
+                        {t.imb_order_id && t.type === "deposit" && (
+                          <Button data-testid={`retry-imb-${t.id}`} onClick={()=>retryImb(t)} variant="outline" className="h-8 px-3 text-xs border-blue-200 text-blue-600 hover:bg-blue-50">🔁 Retry IMB</Button>
+                        )}
                       </div>
                     </div>
                   ) : (

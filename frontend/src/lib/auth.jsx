@@ -27,19 +27,23 @@ export function AuthProvider({ children }) {
       }
     } catch (e) {
       // Only clear session for explicit auth failures (401/403).
-      // For network errors / 5xx, keep the token so user stays signed in
-      // when connectivity returns (fixes "back button logout" on slow WebView).
+      // For network errors / 5xx, KEEP existing user/admin state so the
+      // page does not redirect to login on transient blips (esp. right after
+      // an admin POST like declaring a result, where browser may briefly
+      // throttle subsequent fetches).
       const status = e?.response?.status;
       if (status === 401 || status === 403) {
         localStorage.removeItem("m11_token");
         localStorage.removeItem("m11_role");
         setUser(null);
         setAdmin(null);
-      } else {
-        // Network/server hiccup — preserve session, show as logged-out until next retry
-        setUser(null);
-        setAdmin(null);
+        return;
       }
+      // Network/5xx: if state is still undefined (first load) AND token exists,
+      // optimistically set a minimal user/admin object so guards don't bounce
+      // us to login. Real data will populate on next successful /me call.
+      setUser((prev) => (prev === undefined && role !== "admin") ? { _stale: true } : prev);
+      setAdmin((prev) => (prev === undefined && role === "admin") ? { _stale: true } : prev);
     }
   }, []);
 

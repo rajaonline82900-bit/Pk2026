@@ -1522,24 +1522,73 @@ async def _imb_credit_if_pending(order_id: str, gw_payload: dict):
 
 @api.post("/webhooks/imb")
 async def imb_webhook(req: Request):
-    """IMB calls this on payment status update. Form-encoded payload as per docs."""
+    """IMB calls this on payment status update. Form-encoded or JSON. Tolerant of various field names."""
     try:
         form = await req.form()
         payload = {k: form.get(k) for k in form.keys()}
+        if not payload:
+            payload = await req.json()
     except Exception:
         try:
             payload = await req.json()
         except Exception:
             raise HTTPException(400, "Invalid payload")
-    status = (payload.get("status") or "").upper()
-    order_id = payload.get("order_id")
+    # Tolerant order_id extraction (IMB sometimes uses different field names)
+    order_id = (
+        payload.get("order_id")
+        or payload.get("orderId")
+        or payload.get("orderid")
+        or payload.get("merchant_order_id")
+        or payload.get("client_order_id")
+        or payload.get("txnid")
+    )
+    # Status normalisation
+    raw_status = str(payload.get("status") or payload.get("txnStatus") or payload.get("payment_status") or "").upper()
     if not order_id:
-        return {"ok": False, "message": "missing order_id"}
-    if status in ("SUCCESS", "TRUE"):
+        # Try to log the raw payload to a debug collection so admin can investigate
+        try:
+            await db.imb_webhook_logs.insert_one({"id": str(uuid.uuid4()), "payload": payload, "received_at": now_iso(), "result": "missing_order_id"})
+        except Exception:
+            pass
+        return {"ok": False, "message": "missing order_id", "received_keys": list(payload.keys())}
+    success_states = ("SUCCESS", "TRUE", "COMPLETED", "PAID", "OK", "1")
+    fail_states = ("FAILD", "FAIL", "FALSE", "FAILED", "REJECTED", "0")
+    if raw_status in success_states:
         await _imb_credit_if_pending(order_id, payload)
-    elif status in ("FAILD", "FAIL", "FALSE", "FAILED"):
+    elif raw_status in fail_states:
         await db.transactions.update_one({"imb_order_id": order_id, "status": "pending"}, {"$set": {"status": "rejected", "note": "IMB reported failed payment", "imb_gateway_payload": payload}})
+    # Log for audit
+    try:
+        await db.imb_webhook_logs.insert_one({"id": str(uuid.uuid4()), "order_id": order_id, "status": raw_status, "payload": payload, "received_at": now_iso()})
+    except Exception:
+        pass
     return {"ok": True}
+
+
+@api.post("/admin/payments/retry-imb/{order_id}")
+async def admin_retry_imb(order_id: str, _: dict = Depends(require_admin)):
+    """Admin: force-check IMB for a stuck pending deposit and credit if successful."""
+    s = await db.settings.find_one({"key": "global"}) or {}
+    base = (s.get("imb_base_url") or "https://secure-stage.imb.org.in/").rstrip("/")
+    token = (s.get("imb_user_token") or "").strip()
+    if not token:
+        raise HTTPException(503, "Payment gateway not configured")
+    try:
+        async with _httpx.AsyncClient(timeout=15) as cli:
+            r = await cli.post(f"{base}/api/check-order-status", data={"user_token": token, "order_id": order_id})
+            data = r.json()
+    except Exception as e:
+        raise HTTPException(502, f"Status check failed: {e}")
+    status_norm = (data.get("status") or "").upper()
+    result_status = ((data.get("result") or {}).get("txnStatus") or "").upper()
+    credited = False
+    if status_norm in ("COMPLETED", "SUCCESS") and result_status in ("COMPLETED", "SUCCESS", ""):
+        await _imb_credit_if_pending(order_id, data)
+        credited = True
+    txn = await db.transactions.find_one({"imb_order_id": order_id})
+    if txn:
+        txn.pop("_id", None)
+    return {"ok": True, "credited": credited, "gateway": data, "transaction": txn}
 
 
 # ---------- Refer & Earn ----------

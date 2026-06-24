@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Home, Wallet, BookOpen, Menu, ListChecks, KeyRound,
   LogOut, Share2, User as UserIcon, Trophy,
-  Receipt, HelpCircle, Crown, Star, Sparkles
+  Receipt, HelpCircle, Crown, Star, Sparkles, RefreshCw
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { useAuth } from "../../lib/auth";
@@ -108,6 +108,16 @@ export default function MobileLayout({ children, hideBottomNav }) {
 
       {/* Page content */}
       <main className="px-3 py-3" data-testid="page-content">{children}</main>
+
+      {/* Fixed Refresh Button — between header and bottom nav, always visible */}
+      <button
+        onClick={() => window.location.reload()}
+        data-testid="refresh-btn"
+        aria-label="Refresh"
+        className="fixed right-4 bottom-24 z-[55] w-12 h-12 rounded-full bg-gold-gradient text-blue-900 shadow-2xl active:scale-90 transition flex items-center justify-center border-2 border-blue-900 pulse-gold"
+      >
+        <RefreshCw className="w-5 h-5" strokeWidth={2.5} />
+      </button>
 
       {/* Premium Bottom Nav with floating active indicator */}
       {!hideBottomNav && (
