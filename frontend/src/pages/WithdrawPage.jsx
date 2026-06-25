@@ -65,6 +65,13 @@ export default function WithdrawPage() {
           <Input data-testid="withdraw-amount" inputMode="numeric" value={amount} onChange={(e)=>setAmount(e.target.value.replace(/\D/g,""))} className="pl-9 h-11" placeholder={`Min ${minW}`} />
         </div>
 
+        {/* Live red-blinking warning when amount below minimum */}
+        {num > 0 && num < minW && (
+          <div data-testid="min-withdraw-warning" className="mt-3 blink-red border-2 rounded-xl p-3 font-bold text-center text-sm" style={{ fontFamily: '"Noto Sans Devanagari", system-ui, sans-serif' }}>
+            ⚠️ न्यूनतम निकासी ₹{minW} है — आपने ₹{num} माँगा है। कम से कम ₹{minW} दर्ज करें।
+          </div>
+        )}
+
         <div className="mt-3 grid grid-cols-2 gap-2" data-testid="withdraw-method">
           <button onClick={()=>setMethod("upi")} className={`text-sm font-medium py-2.5 rounded-lg border transition ${method==="upi" ? "bg-[#FF7A00] text-white border-[#FF7A00]" : "bg-white text-slate-700 border-slate-200"}`} data-testid="method-upi">UPI</button>
           <button onClick={()=>setMethod("bank")} className={`text-sm font-medium py-2.5 rounded-lg border transition ${method==="bank" ? "bg-[#FF7A00] text-white border-[#FF7A00]" : "bg-white text-slate-700 border-slate-200"}`} data-testid="method-bank">Bank Transfer</button>

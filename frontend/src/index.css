@@ -106,6 +106,12 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 .pulse-gold { animation: pulse-gold 2s infinite; }
 
+@keyframes blink-red {
+  0%, 100% { background-color: #fee2e2; border-color: #dc2626; color: #991b1b; box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
+  50%      { background-color: #fecaca; border-color: #b91c1c; color: #7f1d1d; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+.blink-red { animation: blink-red 0.9s ease-in-out infinite; }
+
 /* Decorative grid pattern overlay */
 .pattern-grid {
   background-image:

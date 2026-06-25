@@ -137,26 +137,27 @@ function PaymentSection({ type }) {
 }
 
 function WithdrawDetails({ t, copy }) {
-  const m = t.method || (t.method_details?.upi_id ? "upi" : "bank");
-  const md = t.method_details || {};
+  // Backend stores in `account_info`; older code used `method_details`. Read both.
+  const md = t.method_details || t.account_info || {};
+  const m = t.method || (md.upi_id ? "upi" : "bank");
   const Row = ({ label, value, hint }) => (
     <div className="flex items-center justify-between gap-2 text-xs">
       <span className="text-slate-500 w-20 shrink-0">{label}</span>
-      <span className="font-mono text-slate-800 truncate flex-1">{value || "—"}</span>
+      <span className="font-mono text-slate-800 break-all flex-1">{value || "—"}</span>
       {value && <button onClick={() => copy(value, `${hint || label} copied`)} className="text-slate-400 hover:text-slate-700"><Copy className="w-3 h-3" /></button>}
     </div>
   );
   if (m === "upi") {
     return (
-      <div className="bg-slate-50 rounded-md p-2 space-y-1">
-        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">UPI</div>
-        <Row label="UPI ID" value={md.upi_id || t.account_info} hint="UPI ID" />
+      <div className="bg-emerald-50 border border-emerald-200 rounded-md p-2 space-y-1">
+        <div className="text-[10px] uppercase tracking-widest text-emerald-700 font-bold">💸 UPI Withdrawal</div>
+        <Row label="UPI ID" value={md.upi_id || t.account_info?.upi_id} hint="UPI ID" />
       </div>
     );
   }
   return (
-    <div className="bg-slate-50 rounded-md p-2 space-y-1">
-      <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Bank Transfer</div>
+    <div className="bg-blue-50 border border-blue-200 rounded-md p-2 space-y-1">
+      <div className="text-[10px] uppercase tracking-widest text-blue-700 font-bold">🏦 Bank Transfer</div>
       <Row label="Holder" value={md.holder_name} />
       <Row label="Bank" value={md.bank_name} />
       <Row label="A/c No." value={md.account_number} />

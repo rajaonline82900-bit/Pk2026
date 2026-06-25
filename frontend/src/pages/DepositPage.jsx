@@ -9,7 +9,7 @@ import { Label } from "../components/ui/label";
 import { toast, Toaster } from "sonner";
 import { IndianRupee, X, CheckCircle2, Loader2 } from "lucide-react";
 
-const QUICK_AMOUNTS = [100, 200, 500, 1000, 10000, 20000, 50000];
+const QUICK_AMOUNTS = [200, 500, 1000, 5000, 10000, 20000, 50000];
 
 export default function DepositPage() {
   const { user, refreshUser } = useAuth();
@@ -64,6 +64,14 @@ export default function DepositPage() {
           <IndianRupee className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
           <Input data-testid="deposit-amount" inputMode="numeric" value={amount} onChange={(e)=>setAmount(e.target.value.replace(/\D/g,""))} className="pl-9 h-11 text-base font-semibold" placeholder={`Minimum ${min}`} />
         </div>
+
+        {/* Live red-blinking warning when amount below minimum */}
+        {num > 0 && num < min && (
+          <div data-testid="min-deposit-warning" className="mt-3 blink-red border-2 rounded-xl p-3 font-bold text-center text-sm" style={{ fontFamily: '"Noto Sans Devanagari", system-ui, sans-serif' }}>
+            ⚠️ न्यूनतम जमा ₹{min} है — आपने ₹{num} डाला है। कृपया कम से कम ₹{min} डालें।
+          </div>
+        )}
+
         <Button data-testid="deposit-submit" onClick={proceed} disabled={loading || num < min} className="w-full mt-4 h-12 btn-brand text-base font-semibold disabled:opacity-50">
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {loading ? "Creating order…" : `Proceed to Pay ${num >= min ? `₹${num}` : ""}`}
