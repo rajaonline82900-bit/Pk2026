@@ -32,7 +32,10 @@ multi-language support, and Hostinger VPS deployment.
 ### Phase 4 — UI Pulse (Feb 26)
 - **Bottom Nav**: "Fund" → **Refer & Earn** icon
 - **Top 4 Brand Actions**: Real-brand icons — Deposit (₹+ green), Withdrawal (₹↓ rose), Telegram (official paper-plane sky-blue #229ED9), WhatsApp (official glyph green #25D366)
-- **Live Countdown Timer** above PLAY on every active market card: "CLOSES IN HH:MM:SS" — IST-aware, handles overnight markets (e.g. DESAWAR close 04:00 AM next day), updates every 1s
+- ~~Live Countdown Timer above PLAY~~ — REMOVED per user request
+
+### Phase 4.1 — Hotfix (Feb 26)
+- **Admin Result Declaration white-page FIXED**: `setLastDeclare({ ...data, market: selectedMarket?.name, date, result })` — spreading API `data` first prevents its `market` (object) from overriding the string and crashing React render. Verified by testing agent.
 
 
 ### Backend APIs added
