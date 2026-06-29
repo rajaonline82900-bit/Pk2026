@@ -29,6 +29,12 @@ multi-language support, and Hostinger VPS deployment.
 - **Admin Reverse Result**: now date-aware (already worked)
 - **Colorful gradient UI**: Pink/teal/sky/orange action buttons, gradient market cards, gradient banners
 
+### Phase 4 — UI Pulse (Feb 26)
+- **Bottom Nav**: "Fund" → **Refer & Earn** icon
+- **Top 4 Brand Actions**: Real-brand icons — Deposit (₹+ green), Withdrawal (₹↓ rose), Telegram (official paper-plane sky-blue #229ED9), WhatsApp (official glyph green #25D366)
+- **Live Countdown Timer** above PLAY on every active market card: "CLOSES IN HH:MM:SS" — IST-aware, handles overnight markets (e.g. DESAWAR close 04:00 AM next day), updates every 1s
+
+
 ### Backend APIs added
 - `GET /api/users/me/referral` — returns code + stats
 - `GET /api/markets/{id}/result-history` — last 60 results (public)
