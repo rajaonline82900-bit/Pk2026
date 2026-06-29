@@ -8,12 +8,12 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { useAuth } from "../../lib/auth";
 
-// Royal Blue + Yellow theme — Bottom nav
+// Bottom nav: Funds replaced with Refer & Earn
 const NAV_ITEMS = [
   { to: "/my-bids",  icon: ListChecks, label: "My Bids" },
   { to: "/passbook", icon: BookOpen,   label: "Passbook" },
   { to: "/",         icon: Home,       label: "Home" },
-  { to: "/deposit",  icon: Wallet,     label: "Funds" },
+  { to: "/refer",    icon: Share2,     label: "Refer & Earn" },
   { to: "/rates",    icon: Star,       label: "Game Rate" },
 ];
 
