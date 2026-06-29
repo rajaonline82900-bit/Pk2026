@@ -1,0 +1,25 @@
+{
+  "summary": "Verified two bug fixes via real browser automation on preview URL. BUG 1 (Admin Result Declaration white-page) — FIXED: declared '37' for GALI, page stayed rendered, last-declare-banner shows 'Result declared: 37 for GALI' with market as STRING (not object), success toast '✅ GALI → 37 declared! Winners: 0, Paid: ₹0' fired. BUG 2 (Dashboard countdown removal) — FIXED: 0 elements matching data-testid^='countdown-', 0 'CLOSES IN' text occurrences, PLAY button still present/clickable on active markets (linked to /market/<id>), TIME OUT badge still rendered for closed markets. Code review of AdminResults.jsx confirms data is spread FIRST then overridden with market string (line 54). Dashboard.jsx MarketCountdown / useCountdown / 'CLOSES IN' div fully removed (only a comment remains at line 245).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_4.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Non-blocking dev console hydration warning: '<span> cannot be a child of <option>' — caused by Emergent dev instrumentation (x-source-var dynamic span injected into <option>) inside AdminResults game-select. Production build won't include this. No action required.",
+    "Haruf Andar regression NOT re-tested in this iteration because the declare flow with result '37' had 0 matching bids (settled=0, won=0). Task note already confirms backend was verified via curl in prior iteration. If a full E2E regression is desired, main agent can place a haruf_andar bid (number=3) on GALI as user 9999999999 and re-declare 37, then assert wallet_balance increased by bid.amount * 10."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not retested)", "frontend": "100%"},
+  "test_credentials": "Admin admin@m11clube.com/admin123, User 9999999999/1234 — both work.",
+  "seed_data_creation": "None — used existing markets/users.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Both reported bug fixes are verified. /admin/results declare flow is stable. Dashboard market cards have no countdown timer. If a future regression is needed: (1) place haruf_andar bid (number=3 or 7) on GALI for user 9999999999, (2) admin reverse current GALI result via Recent Results panel, (3) re-declare '37', (4) assert user wallet credited by bid.amount * 10 and bid status='won'."
+}

@@ -50,7 +50,8 @@ export default function AdminResults() {
     setDeclaring(true);
     try {
       const { data } = await api.post(`/admin/markets/${marketId}/result`, { result, date });
-      setLastDeclare({ market: selectedMarket?.name, date, result, ...data });
+      // Spread `data` FIRST so its `market` object doesn't overwrite our string market name (otherwise React crashes rendering an object as a child → white page)
+      setLastDeclare({ ...data, market: selectedMarket?.name, date, result });
       toast.success(`✅ ${selectedMarket?.name} → ${result} declared! Winners: ${data.won}, Paid: ₹${data.payout_total}`);
       setResult("");
       loadMarkets();

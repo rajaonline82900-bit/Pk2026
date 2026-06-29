@@ -4,7 +4,7 @@ import MobileLayout from "../components/layout/MobileLayout";
 import { api } from "../lib/api";
 import {
   ArrowUpRight, BarChart3, Play,
-  BookOpen, Wallet as WalletIcon, ArrowDownToLine, Youtube, Trophy, Zap, Sparkles, Crown, TrendingUp, Timer
+  BookOpen, Wallet as WalletIcon, ArrowDownToLine, Youtube, Trophy, Zap, Sparkles, Crown, TrendingUp
 } from "lucide-react";
 import { Sheet, SheetContent } from "../components/ui/sheet";
 
@@ -242,44 +242,7 @@ function WhatsAppIcon() {
   );
 }
 
-/* Countdown — counts down from now (IST) to next occurrence of close_time (HH:MM IST). Handles overnight markets. */
-function useCountdown(closeTimeHHMM) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  if (!closeTimeHHMM) return null;
-  const [h, m] = closeTimeHHMM.split(":").map(Number);
-  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-  const ist = new Date(now + IST_OFFSET);
-  let target = Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate(), h, m, 0) - IST_OFFSET;
-  // If today's close time already passed, target is tomorrow (overnight markets)
-  if (target <= now) target += 24 * 60 * 60 * 1000;
-  const diff = target - now;
-  if (diff <= 0) return { expired: true, hh: "00", mm: "00", ss: "00" };
-  const total = Math.floor(diff / 1000);
-  const hh = String(Math.floor(total / 3600)).padStart(2, "0");
-  const mm = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
-  const ss = String(total % 60).padStart(2, "0");
-  return { expired: false, hh, mm, ss };
-}
-
-function MarketCountdown({ closeTime, testid }) {
-  const c = useCountdown(closeTime);
-  if (!c || c.expired) return null;
-  return (
-    <div className="flex items-center justify-center gap-1.5 mb-1.5" data-testid={testid}>
-      <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-blue-900 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md ring-1 ring-yellow-300/60">
-        <Timer className="w-3 h-3" />
-        Closes in
-      </span>
-      <span className="font-mono font-black text-[13px] text-blue-900 tabular-nums bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded-md shadow-sm">
-        {c.hh}<span className="text-yellow-600 mx-0.5 animate-pulse">:</span>{c.mm}<span className="text-yellow-600 mx-0.5 animate-pulse">:</span>{c.ss}
-      </span>
-    </div>
-  );
-}
+/* Countdown helpers removed per user request — close-time countdown disabled. */
 
 function MarketCard({ m, onChart }) {
   const playable = m.is_market_active;
@@ -318,12 +281,9 @@ function MarketCard({ m, onChart }) {
         </div>
 
         {playable ? (
-          <div className="flex flex-col items-end">
-            <MarketCountdown closeTime={m.close_time} testid={`countdown-${m.id}`} />
-            <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="bg-royal-radial text-yellow-400 text-sm font-black rounded-xl inline-flex items-center justify-center gap-1.5 h-11 px-5 active:scale-95 transition shadow-lg btn-shine relative overflow-hidden">
-              <span className="relative flex items-center gap-1.5">PLAY <Play className="w-4 h-4 fill-yellow-400" /></span>
-            </Link>
-          </div>
+          <Link to={`/market/${m.id}`} data-testid={`play-btn-${m.id}`} className="bg-royal-radial text-yellow-400 text-sm font-black rounded-xl inline-flex items-center justify-center gap-1.5 h-11 px-5 active:scale-95 transition shadow-lg btn-shine relative overflow-hidden">
+            <span className="relative flex items-center gap-1.5">PLAY <Play className="w-4 h-4 fill-yellow-400" /></span>
+          </Link>
         ) : (
           <span data-testid={`timeout-btn-${m.id}`} className="bg-gradient-to-br from-rose-500 to-red-700 text-white text-xs font-black rounded-xl inline-flex items-center justify-center gap-1 h-11 px-4 shadow-md">
             ⏰ TIME OUT
