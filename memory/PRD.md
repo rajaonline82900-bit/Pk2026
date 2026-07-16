@@ -37,6 +37,12 @@ multi-language support, and Hostinger VPS deployment.
 ### Phase 4.1 — Hotfix (Feb 26)
 - **Admin Result Declaration white-page FIXED**: `setLastDeclare({ ...data, market: selectedMarket?.name, date, result })` — spreading API `data` first prevents its `market` (object) from overriding the string and crashing React render. Verified by testing agent.
 
+### Phase 5 — Payment Gateway Migration (Feb 26)
+- **IMB → IMBPAY**: Switched payment gateway from `https://secure-stage.imb.org.in/` to **`https://api.imbpay.in`** (LIVE) with new `user_token = d4d55d42e4f941876ece095ce8afe50c` (Merchant: "Raja online khaiwal")
+- Settings updated in DB + code defaults updated in `server.py` (3 places)
+- End-to-end verified: create-order returns valid `payment_url` (v2-api.newqr.info), `paytm_link`, `bhim_link`, `check_link` — 8/8 backend tests passed (iteration_5.json)
+- Webhook (`/api/webhooks/imb`) unchanged — still handles auto-credit on payment success
+
 
 ### Backend APIs added
 - `GET /api/users/me/referral` — returns code + stats
