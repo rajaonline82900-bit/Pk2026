@@ -1372,7 +1372,7 @@ async def imb_create_order(payload: IMBCreateOrderIn, user: dict = Depends(get_c
     that the frontend can use to launch the payment flow. Creates a `pending` deposit
     transaction tagged with the IMB order_id; the webhook auto-credits the wallet on success."""
     s = await db.settings.find_one({"key": "global"}) or {}
-    base = (s.get("imb_base_url") or "https://secure-stage.imb.org.in/").rstrip("/")
+    base = (s.get("imb_base_url") or "https://api.imbpay.in").rstrip("/")
     token = (s.get("imb_user_token") or "").strip()
     if not token:
         raise HTTPException(503, "Payment gateway not configured. Ask admin to set IMB API key.")
@@ -1434,7 +1434,7 @@ async def imb_check_status(body: dict, user: dict = Depends(get_current_user)):
     if not order_id:
         raise HTTPException(400, "order_id required")
     s = await db.settings.find_one({"key": "global"}) or {}
-    base = (s.get("imb_base_url") or "https://secure-stage.imb.org.in/").rstrip("/")
+    base = (s.get("imb_base_url") or "https://api.imbpay.in").rstrip("/")
     token = (s.get("imb_user_token") or "").strip()
     if not token:
         raise HTTPException(503, "Payment gateway not configured")
@@ -1569,7 +1569,7 @@ async def imb_webhook(req: Request):
 async def admin_retry_imb(order_id: str, _: dict = Depends(require_admin)):
     """Admin: force-check IMB for a stuck pending deposit and credit if successful."""
     s = await db.settings.find_one({"key": "global"}) or {}
-    base = (s.get("imb_base_url") or "https://secure-stage.imb.org.in/").rstrip("/")
+    base = (s.get("imb_base_url") or "https://api.imbpay.in").rstrip("/")
     token = (s.get("imb_user_token") or "").strip()
     if not token:
         raise HTTPException(503, "Payment gateway not configured")
