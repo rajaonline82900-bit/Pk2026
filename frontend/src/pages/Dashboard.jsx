@@ -35,24 +35,8 @@ export default function Dashboard() {
 
   return (
     <MobileLayout>
-      {/* Hero Welcome Banner with crown + animated gradient */}
-      <div className="relative overflow-hidden rounded-2xl bg-royal-radial p-4 mb-4 shadow-xl" data-testid="hero-banner">
-        <div className="absolute inset-0 pattern-grid opacity-40" />
-        <div className="absolute -top-6 -right-6 w-32 h-32 bg-yellow-400/20 rounded-full blur-3xl" />
-        <div className="relative flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-[10px] uppercase tracking-widest text-yellow-400 font-bold">Royal Edition</span>
-            </div>
-            <div className="font-display font-black text-2xl text-white leading-tight">Aaj Lucky banoge?</div>
-            <div className="text-sm text-blue-100 mt-1">{liveCount > 0 ? `${liveCount} markets LIVE` : "Markets open soon"}</div>
-          </div>
-          <div className="text-center">
-            <Trophy className="w-12 h-12 text-yellow-400 drop-shadow-lg" />
-          </div>
-        </div>
-      </div>
+      {/* Today&apos;s Winners Ticker — REPLACES old hero banner */}
+      <TodayWinnersTicker />
 
       {/* 4 Brand Action Buttons — Deposit / Withdrawal / Telegram / WhatsApp */}
       <div className="grid grid-cols-4 gap-2 mb-4" data-testid="quick-actions">
@@ -190,6 +174,117 @@ function BrandAction({ to, href, label, children, bg, ring, testid }) {
   );
   if (href) return <a href={href} target="_blank" rel="noreferrer">{inner}</a>;
   return <Link to={to}>{inner}</Link>;
+}
+
+/* ==================== TODAY'S WINNERS TICKER ==================== */
+function TodayWinnersTicker() {
+  const [winners, setWinners] = useState([]);
+  const [visibleIdx, setVisibleIdx] = useState(0);
+
+  useEffect(() => {
+    const fetchWinners = () => api.get("/showcase-winners?limit=30").then(r => setWinners(r.data || [])).catch(() => {});
+    fetchWinners();
+    const refresh = setInterval(fetchWinners, 30000);
+    return () => clearInterval(refresh);
+  }, []);
+
+  useEffect(() => {
+    if (winners.length <= 3) return;
+    const t = setInterval(() => setVisibleIdx(i => (i + 1) % winners.length), 2200);
+    return () => clearInterval(t);
+  }, [winners.length]);
+
+  // Fallback: if no winners, show a subtle "Be the next winner" call-to-action
+  if (winners.length === 0) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl bg-royal-radial p-4 mb-4 shadow-xl border-2 border-yellow-400/40" data-testid="winners-ticker-empty">
+        <div className="absolute inset-0 pattern-grid opacity-40" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gold-gradient text-blue-900 flex items-center justify-center shadow-xl shrink-0">
+            <Trophy className="w-6 h-6" strokeWidth={2.5} />
+          </div>
+          <div className="flex-1">
+            <div className="text-[10px] uppercase tracking-widest text-yellow-400 font-black">🏆 Today&apos;s Winners</div>
+            <div className="font-display font-black text-lg text-white leading-tight">Be the next winner!</div>
+            <div className="text-xs text-blue-100">Place your bid and win big today</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show top 3 rolling
+  const displayList = [];
+  for (let i = 0; i < Math.min(3, winners.length); i++) {
+    displayList.push(winners[(visibleIdx + i) % winners.length]);
+  }
+
+  const initialsFor = (name) => {
+    const clean = (name || "").replace(/\*+/g, "").trim();
+    return clean.split(/\s+/).map(s => s[0]).slice(0, 2).join("").toUpperCase() || "P";
+  };
+  const avatarColors = [
+    "from-rose-500 to-pink-600",
+    "from-emerald-500 to-teal-600",
+    "from-indigo-500 to-purple-600",
+    "from-amber-500 to-orange-600",
+    "from-sky-500 to-cyan-600",
+    "from-fuchsia-500 to-rose-600",
+  ];
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-royal-radial mb-4 shadow-2xl border-2 border-yellow-400/60" data-testid="winners-ticker">
+      {/* Header strip */}
+      <div className="relative bg-gradient-to-r from-blue-950 via-blue-800 to-blue-950 py-2 px-4 border-b-2 border-yellow-400/60 flex items-center justify-between">
+        <div className="absolute inset-0 pattern-grid opacity-40" />
+        <div className="relative flex items-center gap-1.5">
+          <Trophy className="w-4 h-4 text-yellow-400 animate-pulse" fill="currentColor" />
+          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-gold-shine">Today&apos;s Winners</span>
+        </div>
+        <div className="relative flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)]" />
+          <span className="text-[10px] font-bold text-green-300">LIVE</span>
+        </div>
+      </div>
+
+      {/* Winners list */}
+      <div className="p-2.5 space-y-2 relative">
+        <div className="absolute inset-0 pattern-grid opacity-20" />
+        {displayList.map((w, idx) => (
+          <div
+            key={`${w.id || idx}-${visibleIdx}`}
+            data-testid="winner-row"
+            className="relative flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 border border-yellow-400/30 animate-slide-in-right"
+            style={{ animationDelay: `${idx * 60}ms` }}
+          >
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarColors[(w.id ? w.id.charCodeAt(0) : idx) % avatarColors.length]} text-white font-black flex items-center justify-center shadow-lg shrink-0 border-2 border-yellow-400/60`}>
+              <span className="text-sm">{initialsFor(w.name)}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-white text-sm truncate leading-tight">🎉 {w.name}</div>
+              <div className="text-[10px] text-blue-100 flex items-center gap-1">
+                <span>just won</span>
+                {w.market_name && <span className="text-yellow-300 font-bold">· {w.market_name}</span>}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="font-display font-black text-yellow-400 text-lg leading-none tabular-nums drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
+                ₹{Number(w.amount || 0).toLocaleString("en-IN")}
+              </div>
+              <div className="text-[9px] text-yellow-200 font-bold uppercase tracking-widest mt-0.5">Won</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Total winners today footer */}
+      <div className="relative bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 py-1.5 px-4 text-center border-t border-yellow-400/40">
+        <span className="text-[10px] font-bold text-yellow-300 tracking-wider">
+          {winners.length}+ WINNERS TODAY · <span className="text-white">Aap agle winner ho sakte ho!</span>
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /* Branded SVG icons — match real-world look */

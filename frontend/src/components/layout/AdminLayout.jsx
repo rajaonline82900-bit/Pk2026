@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Calendar, Wallet, Settings, Megaphone, ListChecks, LogOut, Layers, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Wallet, Settings, Megaphone, ListChecks, LogOut, Layers, BarChart3, Trophy } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 
 const ITEMS = [
@@ -11,6 +11,7 @@ const ITEMS = [
   { to: "/admin/users", icon: Users, label: "Users" },
   { to: "/admin/payments", icon: Wallet, label: "Payments" },
   { to: "/admin/bids", icon: ListChecks, label: "All Bids" },
+  { to: "/admin/winners", icon: Trophy, label: "Winners" },
   { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 

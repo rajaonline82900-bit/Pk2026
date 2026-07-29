@@ -37,6 +37,7 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import AdminBids from "./pages/admin/AdminBids";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import AdminWinners from "./pages/admin/AdminWinners";
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
             <Route path="/admin/payments" element={<AdminGuard><AdminPayments /></AdminGuard>} />
             <Route path="/admin/bids" element={<AdminGuard><AdminBids /></AdminGuard>} />
             <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
+            <Route path="/admin/winners" element={<AdminGuard><AdminWinners /></AdminGuard>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

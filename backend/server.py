@@ -462,6 +462,54 @@ async def get_settings():
     return s
 
 
+# ---------- Showcase Winners (public ticker) ----------
+@api.get("/showcase-winners")
+async def list_showcase_winners(limit: int = 30):
+    """Public ticker of latest winners (real + fake, mixed). Only 'active' entries returned."""
+    docs = await db.showcase_winners.find({"active": {"$ne": False}}).sort("created_at", -1).limit(min(limit, 100)).to_list(200)
+    out = []
+    for d in docs:
+        d.pop("_id", None)
+        d.pop("ref_bid_id", None)  # never leak bid ID publicly
+        d.pop("source", None)       # hide real vs fake from public
+        out.append(d)
+    return out
+
+
+@api.get("/admin/showcase-winners")
+async def admin_list_winners(admin: dict = Depends(require_admin)):
+    docs = await db.showcase_winners.find({}).sort("created_at", -1).limit(200).to_list(200)
+    for d in docs:
+        d.pop("_id", None)
+    return docs
+
+
+@api.post("/admin/showcase-winners")
+async def admin_add_winner(body: dict, admin: dict = Depends(require_admin)):
+    name = (body.get("name") or "").strip()
+    amount = int(body.get("amount") or 0)
+    if not name or amount <= 0:
+        raise HTTPException(400, "name and positive amount required")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "amount": amount,
+        "source": "fake",
+        "market_name": (body.get("market_name") or "").strip() or None,
+        "active": True,
+        "created_at": now_iso(),
+    }
+    await db.showcase_winners.insert_one(doc)
+    doc.pop("_id", None)
+    return {"ok": True, "winner": doc}
+
+
+@api.delete("/admin/showcase-winners/{winner_id}")
+async def admin_delete_winner(winner_id: str, admin: dict = Depends(require_admin)):
+    r = await db.showcase_winners.delete_one({"id": winner_id})
+    return {"ok": True, "deleted": r.deleted_count}
+
+
 # ---------- Markets (Public) ----------
 def _market_open_status(m: dict, today_results: Optional[dict] = None) -> dict:
     """Add live open/close flags using IST time. `today_results` is an optional pre-fetched
@@ -956,6 +1004,20 @@ async def admin_declare_result(market_id: str, payload: ResultIn, _: dict = Depe
                 "status": "approved",
                 "note": f"Won bid on {bid['market_name']} ({bid['game_name']})",
                 "ref_bid_id": bid["id"],
+                "created_at": now_iso(),
+            })
+            # Auto-add to public winners ticker (real winner)
+            winner_user = await db.users.find_one({"id": bid["user_id"]}, {"name": 1, "mobile": 1})
+            display_name = (winner_user or {}).get("name") or "Player"
+            mobile_last4 = ((winner_user or {}).get("mobile") or "")[-4:] or "****"
+            await db.showcase_winners.insert_one({
+                "id": str(uuid.uuid4()),
+                "name": f"{display_name.split()[0]} ****{mobile_last4}",
+                "amount": win_amount,
+                "source": "real",
+                "ref_bid_id": bid["id"],
+                "market_name": bid.get("market_name"),
+                "active": True,
                 "created_at": now_iso(),
             })
             await db.notifications.insert_one({

@@ -1,0 +1,53 @@
+{
+  "base": "https://clube-matka-games.preview.emergentagent.com/api",
+  "created_winner_ids_for_ui_rotation": [
+    "a681cb5e-1d45-493b-9667-80c1c4a5200a",
+    "c4264a91-0227-4cc3-8002-a35230eb4e92",
+    "e9cf6d7e-a62e-4ec7-bd7c-fe2b7037f7a5",
+    "2737fea1-28c3-4559-9a77-dd4720577cd4"
+  ],
+  "seed_names_for_ui_rotation": [
+    "QA Rotate A 1785350291",
+    "QA Rotate B 1785350291",
+    "QA Rotate C 1785350291",
+    "QA Rotate D 1785350291"
+  ],
+  "created_market_id": "69769e5e-047a-4aff-b8f2-db4d2f3487ae",
+  "checks": [
+    {
+      "name": "auth",
+      "ok": true,
+      "detail": "admin and user login worked; original user wallet=5210"
+    },
+    {
+      "name": "seed_rotation_winners",
+      "ok": true,
+      "detail": "created 4 fake winners for dashboard rotation"
+    },
+    {
+      "name": "admin_crud",
+      "ok": true,
+      "detail": "POST returned fake winner, GET included it, DELETE removed it"
+    },
+    {
+      "name": "admin_auth_required",
+      "ok": true,
+      "detail": "no-token=401, user-token=403"
+    },
+    {
+      "name": "public_privacy",
+      "ok": true,
+      "detail": "9 public winners returned without source/ref_bid_id/_id"
+    },
+    {
+      "name": "auto_inject_real_win",
+      "ok": true,
+      "detail": "bid 09caa261-d093-4222-8dda-f1e875cd1413 won \u20b91000; admin real winner Test ****9999 inserted; public hides source/ref_bid_id"
+    },
+    {
+      "name": "wallet_restore",
+      "ok": true,
+      "detail": "applied restore delta -900"
+    }
+  ]
+}
