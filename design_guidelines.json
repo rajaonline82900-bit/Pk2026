@@ -1,114 +1,100 @@
 {
-  "project_name": "M11 CLUBE",
-  "theme": "light",
-  "archetype": "Archetype 4: Swiss & High-Contrast (Adapted for Fintech/Trust)",
-  "design_philosophy": "A modern, clean, high-trust fintech-style interface. Reassuring rather than flashy. Minimalist, transparent, security-forward. Neutral backgrounds, restrained color use, bold typography for key amounts or outcomes, and subtle success/error states. Avoid casino-flashy aesthetics. Use pure structural grayscale for hierarchy and vibrant orange/gold only for key actions.",
+  "theme": "The Jade Ledger (Emerald/Jade & Deep Obsidian)",
   "typography": {
-    "primary_font": "Outfit",
-    "primary_font_url": "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap",
-    "secondary_font": "DM Sans",
-    "secondary_font_url": "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap",
-    "rules": {
-      "headings": "Use 'Outfit'. Tight letter spacing (tracking-tight). Do not use default bold everywhere; use font-medium or font-semibold selectively.",
-      "body": "Use 'DM Sans'. Clean, highly legible for numbers and data.",
-      "numbers": "Use tabular-nums for live results and balances to prevent layout shifting.",
-      "labels": "Uppercase, tiny, wide spacing (tracking-wider) for overlines and small labels."
-    }
+    "fonts": "Cormorant Garamond (Headings/Numbers), Outfit & Mukta (Body/Hindi)",
+    "import_url": "@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600&family=Mukta:wght@400;500;600&display=swap');",
+    "usage": "Use Cormorant Garamond (font-serif) for all numeric values (Wallet balance, betting numbers, results) and major H1s to exude wealth and authority. Use Outfit/Mukta (font-sans) for standard UI labels, warnings, and buttons."
   },
   "colors": {
-    "background": {
-      "default": "#FFFFFF",
-      "surface": "#F8F9FA",
-      "surface_hover": "#F1F3F5"
-    },
-    "text": {
-      "primary": "#0F172A",
-      "secondary": "#475569",
-      "muted": "#94A3B8",
-      "inverse": "#FFFFFF"
-    },
-    "brand": {
-      "primary": "#FF7A00",
-      "primary_hover": "#E66D00",
-      "gold_accent": "#F5A623",
-      "gold_light": "#FFF7E6"
-    },
-    "status": {
-      "success": "#10B981",
-      "success_bg": "#ECFDF5",
-      "error": "#EF4444",
-      "error_bg": "#FEF2F2",
-      "warning": "#F59E0B",
-      "info": "#3B82F6"
-    },
-    "borders": {
-      "default": "#E2E8F0",
-      "focus": "#FF7A00"
-    }
+    "background": "#040906",
+    "surface": "#0A130D",
+    "border": "#1A2D1F",
+    "primary": "#00D084",
+    "secondary": "#E5C587",
+    "warning": "#E05263",
+    "text_primary": "#F2F5F3",
+    "text_secondary": "#A0ADA5"
   },
-  "spacing_and_layout": {
-    "container": "max-w-md mx-auto for mobile app view, max-w-7xl for admin dashboard.",
-    "padding": "Generous spacing. Use p-4 or p-6 for cards. Use gap-4 for lists.",
-    "radius": "Sharp but safe edges. Use rounded-lg (8px) or rounded-xl (12px) for cards. Avoid fully pill-shaped buttons unless for small tags.",
-    "shadows": "Minimalist. Use shadow-sm for default cards, shadow-md on hover. No heavy drop shadows. 1px borders preferred over shadows.",
-    "grid": "Bento style for dashboard stats. Strict 1-column list for markets on mobile."
+  "visual enhancers": {
+    "glassmorphism": "bg-[#0A130D]/80 backdrop-blur-xl border border-[#1A2D1F] shadow-[0_8px_32px_rgba(0,208,132,0.03)]",
+    "glows": "Subtle text-shadow or box-shadow with #00D084 for active/winning states.",
+    "textures": "Avoid cheap generic gradients. Use deep solid colors with subtle optical borders."
   },
-  "components": {
-    "Header": {
-      "style": "Sticky top, bg-white/90 backdrop-blur-md, z-50, border-b border-slate-200. Clean display of Wallet Balance.",
-      "interactions": "Clicking wallet opens Add Funds drawer."
-    },
-    "MarketCard": {
-      "style": "Flat design, bg-white, border border-slate-200, rounded-xl, p-4. Grid layout inside for Open/Close times and Live Result.",
-      "typography": "Market Name in Outfit font-semibold text-lg. Live result in large, tabular-nums (e.g., text-3xl font-bold tracking-widest text-primary).",
-      "status": "Dynamic Play Button: Primary brand color if Open. Gray/Disabled if Closed."
-    },
-    "ScrollingNotice": {
-      "style": "bg-brand-gold_light text-brand-primary py-2 px-4 text-sm font-medium. Use react-fast-marquee."
-    },
-    "BottomNav": {
-      "style": "Fixed bottom, bg-white border-t border-slate-200. Flex justify-between, pb-safe.",
-      "icons": "Use Lucide React. Active state gets brand primary color, inactive is text-slate-400."
-    },
-    "AdminStatsCard": {
-      "style": "bg-white border border-slate-200 rounded-xl p-6. Big numbers in Outfit font-semibold text-3xl. Subtitle in text-sm text-slate-500."
-    },
-    "BetSlip": {
-      "style": "Drawer or fixed bottom sheet overlay. Clear input fields for digits, amount. High-contrast 'Place Bid' CTA."
-    }
+  "component name": {
+    "buttons": "Do not use pill shapes. Use rounded-xl. Primary buttons should be solid bg-jade-500 text-obsidian-900 with .tactile-btn class. Secondary buttons should be transparent with 1px border-[#1A2D1F].",
+    "cards": "Apply .glass-panel. Left aligned Market Name (font-sans) and timings. Right aligned PLAY button (Jade) or TIMEOUT badge (Muted Obsidian-700 text-text_secondary, absolutely no red for timeout).",
+    "bottom_nav": "Floating island design. fixed bottom-4 left-4 right-4 rounded-full bg-obsidian-900/95 backdrop-blur-2xl border border-obsidian-700. Active icon is text-jade-500, inactive is text-secondary.",
+    "betting_grid": "Grid of 00-99 must have large touch targets (min 44px). Default state: bg-obsidian-800 border border-obsidian-700 rounded-lg. Selected state: bg-jade-500 text-obsidian-900 font-bold scale-[0.97].",
+    "inputs": "bg-obsidian-900 border border-obsidian-700 rounded-xl focus:border-jade-500 focus:ring-1 focus:ring-jade-500/20 text-white p-4."
+  },
+  "grids": {
+    "bento_dashboard": "Use a 2-column or 4-column bento grid for quick actions (Deposit, Withdraw, Telegram, WhatsApp) with gap-4. They should feel like physical app widgets."
+  },
+  "layouts": {
+    "mobile_first": "Ensure all touch targets are generous (min 44px). Padding scale should be slightly tighter on mobile (p-4). Container should have max-w-md mx-auto for desktop viewing."
   },
   "motion": {
-    "hover": "Subtle transform -translate-y-0.5 and shadow-md for cards.",
-    "click": "Scale down slightly (scale-95) for buttons.",
-    "transitions": "transition-all duration-200 ease-in-out."
-  },
-  "icons_library": "lucide-react",
-  "media": {
-    "images": [
-      {
-        "category": "texture",
-        "url": "https://images.unsplash.com/photo-1545873509-33e944ca7655?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwxfHxnb2xkJTIwYWJzdHJhY3QlMjB0ZXh0dXJlJTIwbGlnaHR8ZW58MHx8fHwxNzgwNjU1MTEwfDA&ixlib=rb-4.1.0&q=85",
-        "description": "Gold abstract texture for premium banners or VIP sections."
-      },
-      {
-        "category": "support_agent",
-        "url": "https://images.pexels.com/photos/7709255/pexels-photo-7709255.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-        "description": "Professional customer support agent for live chat/whatsapp contact section."
-      }
-    ]
+    "dashboard_load": "Staggered fade-up for bento cards and market lists using Framer Motion (initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ staggerChildren: 0.1 }}).",
+    "interactions": "All buttons must use active:scale-[0.97] for tactile, haptic-like feedback.",
+    "wallet_balance": "Subtle scale up and text-glow when balance increases."
   },
   "accessibility": {
-    "contrast": "Ensure all text against brand primary meets WCAG AA.",
-    "focus": "focus:ring-2 focus:ring-brand-primary focus:outline-none.",
-    "testing": "All interactive elements MUST have data-testid attributes."
+    "contrast": "Ensure text-primary on surface colors exceeds 4.5:1.",
+    "touch_targets": "Minimum 44x44px for all betting grid items and buttons.",
+    "warnings": "Use pulsing text (animate-pulse) in text-rose-500 for warnings instead of harsh blinking pure red."
   },
-  "instructions_to_main_agent": [
-    "Implement the UI using a mobile-first approach. For the user app, simulate a mobile viewport (e.g., max-w-md mx-auto, hidden scrollbars) with a fixed bottom navigation.",
-    "For the admin panel, use a desktop-first dashboard layout with a sidebar.",
-    "Use 'Outfit' for all headings and 'DM Sans' for body text. Link the fonts in index.html.",
-    "Ensure the Market List Cards clearly display Open/Close times and the Live Result in a prominent, easily readable format.",
-    "Implement Shadcn UI components for complex interactions like Drawers, Modals, Tabs, and Tables.",
-    "The styling must strictly avoid purple/teal gradients and dark casino themes. Stick to the crisp white, slate grays, and vibrant orange/gold.",
-    "Use Lucide-react for all icons."
-  ]
+  "media": {
+    "icons": "Use lucide-react with refined stroke widths (1.5px). Avoid standard generic SVGs if possible."
+  },
+  "3d libraries": {
+    "usage": "Not recommended for this specific fast-loading betting UI. Rely on 2D tactile neumorphism (inner shadows, scale down on click) to mimic physicality."
+  },
+  "image_urls": {
+    "carousel_poster_1": {
+      "url": "https://images.unsplash.com/photo-1678851168042-cc40b9f93a8f",
+      "description": "Dark green with gold lines texture - perfect for a high-end luxury backdrop.",
+      "category": "Dashboard Carousel Background"
+    },
+    "carousel_poster_2": {
+      "url": "https://images.unsplash.com/photo-1633506079263-7029b4f46762",
+      "description": "Moody casino dice - sets the betting mood without looking cheap.",
+      "category": "Dashboard Carousel Background"
+    },
+    "carousel_poster_3": {
+      "url": "https://images.unsplash.com/photo-1673904788072-40f58f0c43e1",
+      "description": "Gold coins wealth stack - triggers the winning/luck psychology.",
+      "category": "Dashboard Carousel Background"
+    }
+  },
+  "instructions_to_main_agent": "Apply this design strictly through Tailwind config modifications, global CSS variables, and updating shared component classes in the .js/.jsx files. DO NOT rewrite entire page structures unnecessarily. Replace generic red/black/gold Kalyan-Matka styling with this 'Jade Ledger' premium dark palette. Add the custom CSS utilities to index.css and extend the Tailwind theme. Implement the tactile-btn class on all clickables.",
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": "1. Do not use fully transparent backgrounds for headers/dropdowns. 2. Use sonner for toasts, styled to match .glass-panel. 3. Do not center-align standard body text. 4. All interactive elements MUST have data-testid attributes. 5. Prioritize reusing existing components in src/components/ui. 6. Only share guidelines and modifications for .js/.jsx files.",
+  "tailwind_config_patch": {
+    "theme": {
+      "extend": {
+        "colors": {
+          "jade": { "400": "#33D99C", "500": "#00D084", "600": "#00A66A" },
+          "obsidian": { "900": "#040906", "800": "#0A130D", "700": "#111D16" },
+          "champagne": { "400": "#EED9A8", "500": "#E5C587", "600": "#B79E6C" },
+          "rose": { "500": "#E05263" }
+        },
+        "fontFamily": {
+          "serif": ["Cormorant Garamond", "serif"],
+          "sans": ["Outfit", "Mukta", "sans-serif"]
+        }
+      }
+    }
+  },
+  "css_utilities": {
+    ".glass-panel": "bg-[#0A130D]/90 backdrop-blur-xl border border-[#1A2D1F] shadow-[0_8px_32px_rgba(0,208,132,0.03)]",
+    ".text-glow": "text-white drop-shadow-[0_0_12px_rgba(0,208,132,0.5)]",
+    ".tactile-btn": "active:scale-[0.97] transition-all duration-75 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]",
+    ".luxury-gradient-text": "bg-gradient-to-br from-[#E5C587] to-[#B79E6C] bg-clip-text text-transparent"
+  },
+  "emotional_mapping": {
+    "login": "Exclusive Club Entry. Dark, high contrast, minimal noise. Trusting and authoritative.",
+    "dashboard_first_view": "Wealth Control Center. The wallet balance is massive and uses the serif font. Feels like a high-end crypto wallet, distinct from generic matka apps.",
+    "bet_placement": "Tactile Casino. Selecting numbers feels physical and satisfying with an instant visual snap (scale-97).",
+    "result_declaration": "Euphoria. Large serif numbers with golden/jade glowing effects.",
+    "deposit": "Bank-grade Security. Crisp, clear, with a gently pulsing rose-red warning for the minimum deposit."
+  }
 }
