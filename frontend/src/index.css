@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Mukta:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,11 +15,12 @@ a[href*="emergent.sh"][target="_blank"] {
 
 body {
   margin: 0;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: 'Outfit', 'Mukta', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #ffffff;
-  color: #0F172A;
+  background: #040906;
+  color: #F2F5F3;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6, .font-display {
@@ -31,8 +32,27 @@ h1, h2, h3, h4, h5, h6, .font-display {
   font-variant-numeric: tabular-nums;
 }
 
-/* Royal Blue + Yellow theme — creative casino-royale palette */
+/* ==================================================================
+   ✨ JADE LEDGER — Premium Obsidian + Jade + Champagne Theme (Feb 26)
+   Distinctive, non-matka, high-roller crypto-wallet aesthetic.
+   ================================================================== */
 :root {
+  /* Jade Ledger tokens */
+  --jl-obsidian-900: #040906;
+  --jl-obsidian-800: #0A130D;
+  --jl-obsidian-700: #111D16;
+  --jl-border:       #1A2D1F;
+  --jl-jade-400:     #33D99C;
+  --jl-jade-500:     #00D084;
+  --jl-jade-600:     #00A66A;
+  --jl-champagne-400:#EED9A8;
+  --jl-champagne-500:#E5C587;
+  --jl-champagne-600:#B79E6C;
+  --jl-warn:         #E05263;
+  --jl-text:         #F2F5F3;
+  --jl-text-muted:   #A0ADA5;
+
+  /* Legacy Royal Blue tokens kept for backward compat with old pages */
   --royal-blue-50:  #eff6ff;
   --royal-blue-500: #2563eb;
   --royal-blue-700: #1d4ed8;
@@ -42,6 +62,101 @@ h1, h2, h3, h4, h5, h6, .font-display {
   --gold-500:       #f59e0b;
   --gold-600:       #d97706;
 }
+
+/* Grain overlay for depth (very subtle) */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/></svg>");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: overlay;
+}
+
+/* Radial jade glow at top for hero depth */
+.jl-radial-bg {
+  background:
+    radial-gradient(ellipse 800px 400px at 50% 0%, rgba(0, 208, 132, 0.10), transparent 70%),
+    radial-gradient(ellipse 600px 300px at 100% 100%, rgba(229, 197, 135, 0.05), transparent 70%),
+    #040906;
+}
+
+/* Signature utilities */
+.glass-panel {
+  background: rgba(10, 19, 13, 0.85);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid #1A2D1F;
+  box-shadow: 0 8px 32px rgba(0, 208, 132, 0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.glass-panel-hover:hover {
+  border-color: rgba(0, 208, 132, 0.35);
+  box-shadow: 0 12px 40px rgba(0, 208, 132, 0.08), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.text-glow {
+  text-shadow: 0 0 12px rgba(0, 208, 132, 0.55), 0 0 32px rgba(0, 208, 132, 0.15);
+}
+.text-glow-gold {
+  text-shadow: 0 0 12px rgba(229, 197, 135, 0.5), 0 0 32px rgba(229, 197, 135, 0.15);
+}
+.tactile-btn {
+  transition: transform 90ms ease, box-shadow 200ms ease, background-color 150ms ease;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.15), 0 4px 14px rgba(0,0,0,0.35);
+}
+.tactile-btn:active { transform: scale(0.965); }
+.luxury-gradient-text {
+  background: linear-gradient(135deg, #EED9A8 0%, #E5C587 50%, #B79E6C 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.jade-gradient-text {
+  background: linear-gradient(135deg, #33D99C 0%, #00D084 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Serif for numbers/money */
+.font-money { font-family: 'Cormorant Garamond', serif; font-weight: 700; letter-spacing: -0.01em; }
+
+/* Jade primary button */
+.btn-jade {
+  background: linear-gradient(135deg, #00D084 0%, #00A66A 100%);
+  color: #040906;
+  font-weight: 700;
+}
+.btn-jade:hover { background: linear-gradient(135deg, #33D99C 0%, #00D084 100%); }
+
+/* Champagne (gold) button */
+.btn-champagne {
+  background: linear-gradient(135deg, #E5C587 0%, #B79E6C 100%);
+  color: #040906;
+  font-weight: 700;
+}
+
+/* Staggered fade-up entrance */
+@keyframes jl-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.jl-fade-up { animation: jl-fade-up 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Wallet pulse when balance increases */
+@keyframes jl-wallet-pulse {
+  0% { transform: scale(1); text-shadow: 0 0 0 rgba(0,208,132,0); }
+  50% { transform: scale(1.04); text-shadow: 0 0 24px rgba(0,208,132,0.7); }
+  100% { transform: scale(1); text-shadow: 0 0 0 rgba(0,208,132,0); }
+}
+.jl-wallet-pulse { animation: jl-wallet-pulse 900ms ease-out; }
+
+/* Pulsing warning for min-deposit */
+@keyframes jl-warn-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.jl-warn { color: #E05263; animation: jl-warn-pulse 1.4s ease-in-out infinite; }
+
 
 /* Premium animated gradient background */
 .bg-royal-gradient {
