@@ -52,27 +52,7 @@ module.exports = {
           '3': 'hsl(var(--chart-3))',
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))'
-        },
-        // ---------- Jade Ledger palette (premium obsidian + jade + champagne) ----------
-        jade: {
-          400: '#33D99C',
-          500: '#00D084',
-          600: '#00A66A',
-        },
-        obsidian: {
-          900: '#040906',
-          800: '#0A130D',
-          700: '#111D16',
-        },
-        champagne: {
-          400: '#EED9A8',
-          500: '#E5C587',
-          600: '#B79E6C',
-        },
-      },
-      fontFamily: {
-        serif: ['"Cormorant Garamond"', 'serif'],
-        sans: ['Outfit', 'Mukta', 'sans-serif'],
+        }
       },
       keyframes: {
         'accordion-down': {
