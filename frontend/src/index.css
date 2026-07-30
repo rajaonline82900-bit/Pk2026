@@ -50,6 +50,32 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 .animate-slide-in-right { animation: slide-in-right 480ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+/* Modern Market Card — animated gradient shimmer border */
+@keyframes market-border-shine {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.market-shine-border {
+  background: linear-gradient(120deg, #fbbf24 0%, #f59e0b 20%, transparent 40%, transparent 60%, #fbbf24 80%, #f59e0b 100%);
+  background-size: 300% 300%;
+  animation: market-border-shine 4.5s ease-in-out infinite;
+  padding: 1.5px;
+  border-radius: 1.5rem;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+}
+.market-card-active { box-shadow: 0 10px 40px rgba(37, 99, 235, 0.35), 0 0 24px rgba(251, 191, 36, 0.12); }
+.market-card-closed { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); opacity: 0.9; }
+
+/* Money font — larger tabular serif for result numbers */
+.font-money { font-family: 'Outfit', 'Manrope', sans-serif; font-weight: 900; letter-spacing: -0.02em; }
+
 /* Premium animated gradient background */
 .bg-royal-gradient {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);

@@ -35,8 +35,7 @@ export default function Dashboard() {
 
   return (
     <MobileLayout>
-      {/* Today&apos;s Winners Ticker — REPLACES old hero banner */}
-      <TodayWinnersTicker />
+      {/* Winners ticker removed per user request */}
 
       {/* 4 Brand Action Buttons — Deposit / Withdrawal / Telegram / WhatsApp */}
       <div className="grid grid-cols-4 gap-2 mb-4" data-testid="quick-actions">
@@ -344,88 +343,107 @@ function MarketCard({ m, onChart }) {
   const today = m.today_result || "**";
   const yesterday = m.yesterday_result || "**";
   return (
-    <div className="relative bg-royal-radial rounded-2xl overflow-hidden shadow-xl border border-yellow-400/30" data-testid={`market-card-${m.id}`}>
-      {/* Top gold accent line */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent z-10" />
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent z-10" />
+    <div
+      className={`relative rounded-3xl overflow-hidden shadow-2xl group ${playable ? "market-card-active" : "market-card-closed"}`}
+      data-testid={`market-card-${m.id}`}
+    >
+      {/* Animated gradient border for active markets */}
+      {playable && <div className="absolute inset-0 rounded-3xl pointer-events-none market-shine-border" />}
 
-      <div className="flex">
-        {/* LEFT: Main info panel (2/3) */}
-        <div className="flex-1 p-3.5 relative min-w-0">
-          <div className="absolute inset-0 pattern-grid opacity-25" />
-          <div className="relative">
-            {/* Chart button + market name */}
-            <div className="flex items-center gap-2 mb-3">
-              <button onClick={onChart} data-testid={`market-chart-${m.id}`} className="active:scale-90 transition shrink-0" aria-label="Result history">
-                <div className="w-10 h-10 rounded-xl bg-gold-gradient text-blue-900 flex items-center justify-center shadow-lg btn-shine">
-                  <BarChart3 className="w-5 h-5" strokeWidth={2.5} />
-                </div>
-              </button>
-              <div className="flex-1 min-w-0">
-                <div className="font-display font-black text-gold-shine text-lg leading-tight truncate" data-testid="market-name">{m.name}</div>
-                <button onClick={onChart} className="text-[9px] text-yellow-300 font-bold flex items-center gap-0.5" data-testid={`view-chart-${m.id}`}>
-                  <TrendingUp className="w-2.5 h-2.5" /> VIEW CHART
-                </button>
+      {/* Card body */}
+      <div className="relative rounded-3xl bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 p-4">
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 pattern-grid opacity-25" />
+        {/* Glowing orb accents */}
+        <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl ${playable ? "bg-yellow-400/25" : "bg-rose-500/20"}`} />
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full blur-3xl bg-indigo-500/20" />
+
+        <div className="relative">
+          {/* Top row: Market name + Chart chip */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${playable ? "bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.9)]" : "bg-rose-400"}`} />
+                <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${playable ? "text-green-300" : "text-rose-300"}`}>
+                  {playable ? "LIVE" : "CLOSED"}
+                </span>
+              </div>
+              <div className="font-display font-black text-2xl text-gold-shine leading-tight tracking-tight truncate" data-testid="market-name">
+                {m.name}
               </div>
             </div>
+            <button
+              onClick={onChart}
+              data-testid={`market-chart-${m.id}`}
+              className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-yellow-400/40 text-yellow-300 text-[10px] font-black hover:bg-white/15 active:scale-95 transition"
+              data-testid-hint={`view-chart-${m.id}`}
+              aria-label="View chart"
+            >
+              <BarChart3 className="w-3 h-3" strokeWidth={2.5} />
+              <span className="tracking-widest">CHART</span>
+            </button>
+          </div>
 
-            {/* BIG result numbers — OLD → NEW */}
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="text-center">
-                <div className="font-display font-black text-3xl text-white/50 tabular-nums leading-none" data-testid="market-old">{yesterday}</div>
-                <div className="text-[8px] font-bold text-blue-200 mt-1 tracking-[0.15em]">YESTERDAY</div>
+          {/* Result numbers — HUGE display */}
+          <div className="flex items-center justify-center gap-3 py-4">
+            <div className="text-center">
+              <div className="font-display font-black text-4xl text-white/45 tabular-nums leading-none tracking-tight" data-testid="market-old">
+                {yesterday}
               </div>
-              <ArrowUpRight className="w-6 h-6 text-yellow-400 mx-1" strokeWidth={2.5} />
-              <div className="text-center">
-                <div className={`font-display font-black text-3xl tabular-nums leading-none ${today !== "**" ? "text-yellow-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]" : "text-white/40"}`} data-testid="market-new">{today}</div>
-                <div className="text-[8px] font-bold text-yellow-300 mt-1 tracking-[0.15em]">TODAY</div>
-              </div>
+              <div className="text-[8px] font-black text-blue-300 mt-1.5 tracking-[0.25em]">YESTERDAY</div>
             </div>
-
-            {/* Open / Close times */}
-            <div className="flex items-center justify-center gap-2 text-[10px] pt-1">
-              <span className="text-yellow-400 font-bold">OPEN</span>
-              <span className="text-white tabular-nums">{format12(m.open_time)}</span>
-              <span className="text-yellow-400">·</span>
-              <span className="text-yellow-400 font-bold">CLOSE</span>
-              <span className="text-white tabular-nums">{format12(m.close_time)}</span>
+            <div className="mx-1 flex flex-col items-center gap-0.5">
+              <div className="h-px w-10 bg-gradient-to-r from-transparent via-yellow-400/60 to-transparent" />
+              <ArrowUpRight className="w-6 h-6 text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" strokeWidth={2.5} />
+              <div className="h-px w-10 bg-gradient-to-r from-transparent via-yellow-400/60 to-transparent" />
+            </div>
+            <div className="text-center">
+              <div
+                className={`font-display font-black text-4xl tabular-nums leading-none tracking-tight ${today !== "**" ? "text-yellow-400 drop-shadow-[0_0_14px_rgba(251,191,36,0.7)]" : "text-white/40"}`}
+                data-testid="market-new"
+              >
+                {today}
+              </div>
+              <div className="text-[8px] font-black text-yellow-300 mt-1.5 tracking-[0.25em]">TODAY</div>
             </div>
           </div>
-        </div>
 
-        {/* PERFORATED DIVIDER — classic ticket stub look */}
-        <div className="relative flex flex-col items-center justify-center px-0">
-          <div className="w-3 h-3 rounded-full bg-slate-50 -mt-1.5" />
-          <div className="flex-1 border-l-2 border-dashed border-yellow-400/50 mx-1" />
-          <div className="w-3 h-3 rounded-full bg-slate-50 -mb-1.5" />
-        </div>
+          {/* Times row — compact pill row */}
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 bg-white/8 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
+              <div className="w-1 h-1 rounded-full bg-yellow-400" />
+              <span className="text-[9px] font-black text-yellow-400 tracking-widest">OPEN</span>
+              <span className="text-[11px] font-money text-white tabular-nums">{format12(m.open_time)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white/8 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/10">
+              <div className="w-1 h-1 rounded-full bg-rose-400" />
+              <span className="text-[9px] font-black text-rose-400 tracking-widest">CLOSE</span>
+              <span className="text-[11px] font-money text-white tabular-nums">{format12(m.close_time)}</span>
+            </div>
+          </div>
 
-        {/* RIGHT STUB: PLAY or TIME OUT */}
-        <div className="w-24 flex flex-col items-center justify-center gap-1.5 py-3 px-2 relative">
-          <div className="absolute inset-0 pattern-grid opacity-20" />
+          {/* Main CTA — full-width PLAY / TIME OUT */}
           {playable ? (
-            <>
-              <div className="relative text-[9px] font-black text-yellow-400 uppercase tracking-[0.15em]">✦ READY ✦</div>
-              <Link
-                to={`/market/${m.id}`}
-                data-testid={`play-btn-${m.id}`}
-                className="relative w-16 h-16 rounded-full bg-gold-gradient text-blue-900 flex items-center justify-center shadow-[0_8px_24px_rgba(251,191,36,0.5)] active:scale-95 transition btn-shine ring-2 ring-yellow-300/50 ring-offset-2 ring-offset-blue-900"
-              >
-                <Play className="w-7 h-7 fill-blue-900" strokeWidth={0} />
-              </Link>
-              <div className="relative text-[11px] font-black text-yellow-400 tracking-wider">PLAY</div>
-            </>
+            <Link
+              to={`/market/${m.id}`}
+              data-testid={`play-btn-${m.id}`}
+              className="relative flex items-center justify-center gap-2 w-full bg-gold-gradient text-blue-950 font-display font-black text-lg py-3.5 rounded-2xl shadow-[0_10px_28px_rgba(251,191,36,0.5)] active:scale-[0.98] transition overflow-hidden group/btn"
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700" />
+              <span className="relative flex items-center gap-2 tracking-widest">
+                <Play className="w-5 h-5 fill-blue-950" strokeWidth={0} />
+                PLAY NOW
+                <ArrowUpRight className="w-5 h-5" strokeWidth={2.5} />
+              </span>
+            </Link>
           ) : (
-            <>
-              <div className="relative text-[9px] font-black text-rose-300 uppercase tracking-[0.15em]">✕ CLOSED</div>
-              <div
-                data-testid={`timeout-btn-${m.id}`}
-                className="relative w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-red-700 text-white flex items-center justify-center shadow-xl ring-2 ring-rose-400/40 ring-offset-2 ring-offset-blue-900"
-              >
-                <span className="text-2xl">⏰</span>
-              </div>
-              <div className="relative text-[10px] font-black text-rose-300 tracking-wider">TIME OUT</div>
-            </>
+            <div
+              data-testid={`timeout-btn-${m.id}`}
+              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-rose-600/80 via-red-700/80 to-rose-600/80 text-white font-display font-black text-lg py-3.5 rounded-2xl shadow-inner border border-rose-400/30 cursor-not-allowed"
+            >
+              <span className="text-2xl">⏰</span>
+              <span className="tracking-widest">TIME OUT</span>
+            </div>
           )}
         </div>
       </div>
