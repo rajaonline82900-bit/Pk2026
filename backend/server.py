@@ -476,6 +476,34 @@ async def list_showcase_winners(limit: int = 30):
     return out
 
 
+# ---------- Daily Joined Users (public social proof) ----------
+@api.get("/daily-joined-users")
+async def list_daily_joined_users(limit: int = 30):
+    """Public: masked list of today's new users + count. Shows first name + last 4 digits of mobile."""
+    # Use rolling last-24-hours window (simpler than IST midnight boundary with UTC-stored timestamps)
+    cutoff_utc = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    total_today = await db.users.count_documents({
+        "role": {"$ne": "admin"},
+        "created_at": {"$gte": cutoff_utc},
+    })
+    docs = await db.users.find({
+        "role": {"$ne": "admin"},
+        "created_at": {"$gte": cutoff_utc},
+    }).sort("created_at", -1).limit(min(limit, 100)).to_list(100)
+    users = []
+    for d in docs:
+        name = d.get("name") or "Player"
+        mobile = d.get("mobile") or ""
+        first = name.split()[0] if name else "Player"
+        last4 = mobile[-4:] if mobile else "****"
+        users.append({
+            "id": d.get("id"),
+            "name": f"{first} ****{last4}",
+            "joined_at": d.get("created_at"),
+        })
+    return {"count": total_today, "users": users}
+
+
 @api.get("/admin/showcase-winners")
 async def admin_list_winners(admin: dict = Depends(require_admin)):
     docs = await db.showcase_winners.find({}).sort("created_at", -1).limit(200).to_list(200)

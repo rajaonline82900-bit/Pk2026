@@ -4,7 +4,8 @@ import MobileLayout from "../components/layout/MobileLayout";
 import { api } from "../lib/api";
 import {
   ArrowUpRight, BarChart3, Play,
-  BookOpen, Wallet as WalletIcon, ArrowDownToLine, Youtube, Trophy, Zap, Sparkles, Crown, TrendingUp
+  BookOpen, Wallet as WalletIcon, ArrowDownToLine, Youtube, Trophy, Zap, Sparkles, Crown, TrendingUp,
+  Users, ChevronRight
 } from "lucide-react";
 import { Sheet, SheetContent } from "../components/ui/sheet";
 
@@ -22,53 +23,121 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [howOpen, setHowOpen] = useState(false);
   const [historyMarket, setHistoryMarket] = useState(null);
+  const [dailyUsers, setDailyUsers] = useState({ count: 0, users: [] });
+  const [dailyOpen, setDailyOpen] = useState(false);
+  const [posterIdx, setPosterIdx] = useState(0);
 
   useEffect(() => {
-    Promise.all([api.get("/markets"), api.get("/settings")])
-      .then(([m, s]) => { setMarkets(m.data); setSettings(s.data); })
+    Promise.all([api.get("/markets"), api.get("/settings"), api.get("/daily-joined-users").catch(() => ({ data: { count: 0, users: [] } }))])
+      .then(([m, s, d]) => { setMarkets(m.data); setSettings(s.data); setDailyUsers(d.data); })
       .finally(() => setLoading(false));
   }, []);
 
   const wa = (settings.whatsapp_number || "+919999999999").replace(/[^\d+]/g, "");
   const tg = settings.telegram_url || "https://t.me/m11clube";
   const liveCount = markets.filter(m => m.is_market_active).length;
+  const posters = Array.isArray(settings.posters) ? settings.posters.filter(p => p && p.image_url) : [];
+
+  useEffect(() => {
+    if (posters.length <= 1) return;
+    const t = setInterval(() => setPosterIdx(i => (i + 1) % posters.length), 4500);
+    return () => clearInterval(t);
+  }, [posters.length]);
 
   return (
     <MobileLayout>
-      {/* Winners ticker removed per user request */}
+      {/* ===== Poster Banner (from admin settings) ===== */}
+      {posters.length > 0 && (
+        <div className="mb-4 rounded-2xl overflow-hidden shadow-2xl border-2 border-yellow-400/50 relative bg-royal-radial" data-testid="poster-carousel">
+          <a
+            href={posters[posterIdx].link || "#"}
+            target={posters[posterIdx].link ? "_blank" : undefined}
+            rel="noreferrer"
+            className="block aspect-[16/8] w-full relative"
+          >
+            <img
+              src={posters[posterIdx].image_url}
+              alt="M11 CLUBE poster"
+              className="w-full h-full object-cover"
+              data-testid={`poster-img-${posterIdx}`}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          </a>
+          {posters.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {posters.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${i === posterIdx ? "w-6 bg-yellow-400" : "w-1.5 bg-white/60"}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* 4 Brand Action Buttons — Deposit / Withdrawal / Telegram / WhatsApp */}
-      <div className="grid grid-cols-4 gap-2 mb-4" data-testid="quick-actions">
-        <BrandAction to="/deposit" label="Deposit" testid="action-deposit" bg="from-emerald-500 via-green-500 to-emerald-700" ring="ring-emerald-300">
-          <DepositIcon />
-        </BrandAction>
-        <BrandAction to="/withdraw" label="Withdrawal" testid="action-withdraw" bg="from-rose-500 via-red-500 to-rose-700" ring="ring-rose-300">
-          <WithdrawalIcon />
-        </BrandAction>
-        <BrandAction href={tg} label="Telegram" testid="action-telegram" bg="from-[#2AABEE] via-[#229ED9] to-[#1E96CC]" ring="ring-sky-300">
-          <TelegramIcon />
-        </BrandAction>
-        <BrandAction href={`https://wa.me/${wa.replace(/\D/g, "")}`} label="WhatsApp" testid="action-whatsapp" bg="from-[#25D366] via-[#1FBE5C] to-[#128C7E]" ring="ring-emerald-300">
-          <WhatsAppIcon />
-        </BrandAction>
+      {/* ===== 4 Brand Action Buttons — with attractive frame ===== */}
+      <div className="relative mb-4 rounded-3xl bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 p-3 border-2 border-yellow-400/60 shadow-2xl overflow-hidden" data-testid="quick-actions-frame">
+        <div className="absolute inset-0 pattern-grid opacity-20" />
+        <div className="absolute -top-8 -right-8 w-24 h-24 bg-yellow-400/20 rounded-full blur-2xl" />
+        <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl" />
+        {/* Top gold accent */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
+        <div className="grid grid-cols-4 gap-2 relative" data-testid="quick-actions">
+          <BrandAction to="/deposit" label="Deposit" testid="action-deposit" bg="from-emerald-500 via-green-500 to-emerald-700" ring="ring-emerald-300">
+            <DepositIcon />
+          </BrandAction>
+          <BrandAction to="/withdraw" label="Withdrawal" testid="action-withdraw" bg="from-rose-500 via-red-500 to-rose-700" ring="ring-rose-300">
+            <WithdrawalIcon />
+          </BrandAction>
+          <BrandAction href={tg} label="Telegram" testid="action-telegram" bg="from-[#2AABEE] via-[#229ED9] to-[#1E96CC]" ring="ring-sky-300">
+            <TelegramIcon />
+          </BrandAction>
+          <BrandAction href={`https://wa.me/${wa.replace(/\D/g, "")}`} label="WhatsApp" testid="action-whatsapp" bg="from-[#25D366] via-[#1FBE5C] to-[#128C7E]" ring="ring-emerald-300">
+            <WhatsAppIcon />
+          </BrandAction>
+        </div>
       </div>
 
-      {/* How to Play - Gold banner */}
-      <button onClick={() => setHowOpen(true)} data-testid="how-to-play-btn" className="block w-full bg-gold-gradient text-blue-900 text-center font-display font-black text-xl py-3 rounded-2xl shadow-xl mb-3 active:scale-[0.98] transition btn-shine relative overflow-hidden">
+      {/* ===== Daily Joined Users badge — clickable social proof ===== */}
+      <button
+        onClick={() => setDailyOpen(true)}
+        data-testid="daily-users-btn"
+        className="w-full flex items-center gap-3 mb-4 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 rounded-2xl p-3 shadow-xl border border-emerald-300/40 active:scale-[0.98] transition"
+      >
+        <div className="relative w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shrink-0">
+          <Users className="w-6 h-6 text-white" strokeWidth={2.25} />
+          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 border-2 border-emerald-600 animate-pulse" />
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <div className="text-[10px] font-black text-emerald-100 uppercase tracking-widest">Aaj join hue</div>
+          <div className="font-display font-black text-white text-xl leading-tight tabular-nums">
+            {dailyUsers.count > 0 ? `${dailyUsers.count}+ Users` : "Be the first today!"}
+          </div>
+        </div>
+        <div className="flex -space-x-2 shrink-0">
+          {(dailyUsers.users || []).slice(0, 3).map((u, i) => (
+            <div key={u.id || i} className={`w-8 h-8 rounded-full text-white text-[10px] font-black flex items-center justify-center border-2 border-emerald-600 shadow bg-gradient-to-br ${["from-pink-500 to-rose-600","from-amber-500 to-orange-600","from-purple-500 to-indigo-600"][i]}`}>
+              {(u.name || "P").charAt(0)}
+            </div>
+          ))}
+        </div>
+        <ChevronRight className="w-5 h-5 text-white shrink-0" />
+      </button>
+
+      {/* How to Play — Gold banner */}
+      <button onClick={() => setHowOpen(true)} data-testid="how-to-play-btn" className="block w-full bg-gold-gradient text-blue-900 text-center font-display font-black text-xl py-3 rounded-2xl shadow-xl mb-4 active:scale-[0.98] transition btn-shine relative overflow-hidden">
         <span className="relative flex items-center justify-center gap-2">
           <Youtube className="w-6 h-6" /> HOW TO PLAY
         </span>
       </button>
 
-      {/* Live Result header — Royal style */}
-      <div className="flex items-center gap-2 mb-3" data-testid="fast-result-header">
-        <div className="flex-1 bg-royal-radial text-white text-center font-display font-black text-lg py-3 rounded-2xl shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 pattern-grid opacity-30" />
-          <span className="relative flex items-center justify-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-400" fill="currentColor" />
-            <span className="text-gold-shine">FAST RESULT</span>
-            <Zap className="w-5 h-5 text-yellow-400" fill="currentColor" />
-          </span>
+      {/* Live status strip (replaces FAST RESULT) */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 flex items-center justify-center gap-2 text-xs">
+          <span className={`w-1.5 h-1.5 rounded-full ${liveCount > 0 ? "bg-green-500 animate-pulse" : "bg-slate-400"}`} />
+          <span className="font-black tracking-widest text-blue-900">{liveCount > 0 ? `${liveCount} LIVE MARKETS` : "ALL MARKETS CLOSED"}</span>
         </div>
       </div>
 
@@ -107,6 +176,42 @@ export default function Dashboard() {
       </Sheet>
 
       <ResultHistorySheet market={historyMarket} onClose={() => setHistoryMarket(null)} />
+
+      {/* Daily Joined Users Sheet */}
+      <Sheet open={dailyOpen} onOpenChange={setDailyOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+          <div className="text-center mb-3">
+            <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+              <Users className="w-3 h-3" /> Aaj Ke Naye Members
+            </div>
+            <div className="font-display font-black text-2xl text-blue-900 mt-2" data-testid="daily-users-count">{dailyUsers.count || 0} users joined today</div>
+            <div className="text-xs text-slate-500 mt-1">Welcome to the M11 CLUBE family! 🎉</div>
+          </div>
+          {(dailyUsers.users || []).length === 0 ? (
+            <div className="text-center text-slate-400 text-sm py-10">
+              Koi user aaj tak join nahi hua. Aap pehle ho sakte ho!
+            </div>
+          ) : (
+            <div className="space-y-2" data-testid="daily-users-list">
+              {dailyUsers.users.map((u, i) => {
+                const colors = ["from-pink-500 to-rose-600","from-amber-500 to-orange-600","from-purple-500 to-indigo-600","from-sky-500 to-cyan-600","from-emerald-500 to-teal-600","from-fuchsia-500 to-rose-600"];
+                return (
+                  <div key={u.id || i} data-testid={`daily-user-row-${i}`} className="flex items-center gap-3 bg-slate-50 rounded-2xl p-3 border border-slate-200">
+                    <div className={`w-10 h-10 rounded-full text-white font-black flex items-center justify-center shadow bg-gradient-to-br ${colors[i % colors.length]}`}>
+                      {(u.name || "P").charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-slate-900 truncate">🎉 {u.name}</div>
+                      <div className="text-[10px] text-slate-500">Joined {u.joined_at ? new Date(u.joined_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "today"}</div>
+                    </div>
+                    <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full uppercase tracking-widest">New</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </MobileLayout>
   );
 }
