@@ -40,8 +40,8 @@ export default function AdminLogin() {
         </div>
         <form onSubmit={submit} className="space-y-4" data-testid="admin-login-form">
           <div>
-            <Label className="text-xs uppercase tracking-wider text-slate-600">Email</Label>
-            <Input data-testid="admin-login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@m11clube.com" className="mt-1.5 h-11" />
+            <Label className="text-xs uppercase tracking-wider text-slate-600">Login ID</Label>
+            <Input data-testid="admin-login-email" type="text" autoCapitalize="none" autoCorrect="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="rajakhaiwal@85" className="mt-1.5 h-11" />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-wider text-slate-600">Password</Label>

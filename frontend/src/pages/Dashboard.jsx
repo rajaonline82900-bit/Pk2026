@@ -94,18 +94,18 @@ export default function Dashboard() {
 
       {/* How to Play Sheet */}
       <Sheet open={howOpen} onOpenChange={setHowOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] bg-gradient-to-br from-blue-50 to-white">
-          <div className="text-center mb-4">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 border-t-4 border-yellow-400">
+          <div className="text-center mb-4 pt-2">
             <div className="inline-flex items-center gap-2 bg-gold-gradient text-blue-900 px-4 py-1.5 rounded-full text-xs font-bold mb-2">
-              <Youtube className="w-4 h-4" /> TUTORIALS
+              <Youtube className="w-4 h-4" /> VIDEO TUTORIALS
             </div>
-            <div className="font-display font-black text-2xl text-blue-900">How to use Raja Khaiwal</div>
-            <div className="text-xs text-slate-600 mt-1">Choose a topic to watch the tutorial</div>
+            <div className="font-display font-black text-2xl text-gold-shine">Raja Khaiwal Guide</div>
+            <div className="text-xs text-blue-200 mt-1">Har topic ki alag video — abhi dekho aur seekho</div>
           </div>
-          <div className="space-y-3">
-            <HowOption Icon={BookOpen}        label="How to Play"     desc="Game rules, betting basics"  url={settings.youtube_how_to_play}     color="from-rose-500 to-pink-600" testid="how-play" />
-            <HowOption Icon={WalletIcon}      label="How to Deposit"  desc="Add money to your wallet"    url={settings.youtube_how_to_deposit}  color="from-emerald-500 to-teal-600" testid="how-deposit" />
-            <HowOption Icon={ArrowDownToLine} label="How to Withdraw" desc="Withdraw your winnings"      url={settings.youtube_how_to_withdraw} color="from-blue-500 to-indigo-600" testid="how-withdraw" />
+          <div className="space-y-4 pb-4">
+            <VideoSection Icon={BookOpen}        title="How to Play"     desc="Game rules, betting basics"   url={settings.youtube_how_to_play}     accent="from-rose-500 to-pink-600" testid="how-play" />
+            <VideoSection Icon={WalletIcon}      title="How to Deposit"  desc="Wallet me paise kaise daalein" url={settings.youtube_how_to_deposit}  accent="from-emerald-500 to-teal-600" testid="how-deposit" />
+            <VideoSection Icon={ArrowDownToLine} title="How to Withdraw" desc="Jeeti hui rakam kaise nikaalein" url={settings.youtube_how_to_withdraw} accent="from-sky-500 to-indigo-600" testid="how-withdraw" />
           </div>
         </SheetContent>
       </Sheet>
@@ -115,20 +115,71 @@ export default function Dashboard() {
   );
 }
 
-function HowOption({ Icon, label, desc, url, color, testid }) {
-  const handle = () => { if (url) window.open(url, "_blank", "noopener,noreferrer"); };
+function VideoSection({ Icon, title, desc, url, accent, testid }) {
   return (
-    <button onClick={handle} data-testid={testid} className="w-full flex items-center gap-3 bg-white border border-slate-200 rounded-2xl p-3 hover:shadow-lg hover:border-yellow-300 active:scale-[0.98] transition text-left">
-      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color} text-white flex items-center justify-center shadow-lg`}>
-        <Icon className="w-7 h-7" />
+    <div data-testid={testid} className="rounded-2xl overflow-hidden border-2 border-yellow-400/40 bg-blue-950/60 backdrop-blur-sm shadow-2xl">
+      <div className="flex items-center gap-3 p-3 border-b border-yellow-400/20">
+        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${accent} text-white flex items-center justify-center shadow-lg shrink-0`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-black text-white text-base leading-tight">{title}</div>
+          <div className="text-[11px] text-blue-200 mt-0.5">{desc}</div>
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-display font-bold text-slate-900 text-base">{label}</div>
-        <div className="text-xs text-slate-500 mt-0.5">{desc}</div>
-      </div>
-      {url ? <Youtube className="w-6 h-6 text-rose-500 shrink-0" /> : <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full">SOON</span>}
-    </button>
+      <VideoPlayer url={url} testid={`${testid}-player`} />
+    </div>
   );
+}
+
+/**
+ * Renders any of these inline:
+ * - YouTube (watch/youtu.be/shorts) → embedded iframe
+ * - .mp4 / .webm / .mov → HTML5 <video>
+ * - null/empty → placeholder "coming soon"
+ */
+export function VideoPlayer({ url, testid, poster }) {
+  if (!url) {
+    return (
+      <div className="aspect-video bg-blue-900/40 flex flex-col items-center justify-center text-blue-200 gap-2" data-testid={`${testid}-empty`}>
+        <Youtube className="w-10 h-10 opacity-40" />
+        <div className="text-xs font-semibold">Video coming soon</div>
+      </div>
+    );
+  }
+  const yt = extractYouTubeId(url);
+  if (yt) {
+    return (
+      <div className="aspect-video bg-black">
+        <iframe
+          data-testid={testid}
+          src={`https://www.youtube.com/embed/${yt}?rel=0&modestbranding=1`}
+          title="Video Tutorial"
+          className="w-full h-full"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="aspect-video bg-black">
+      <video data-testid={testid} src={url} controls playsInline poster={poster} className="w-full h-full object-contain bg-black" />
+    </div>
+  );
+}
+
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
 }
 
 function ResultHistorySheet({ market, onClose }) {
@@ -172,7 +223,7 @@ function BrandAction({ to, href, label, children, bg, ring, testid }) {
       <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${bg} text-white flex items-center justify-center shadow-xl active:scale-95 transition-transform btn-shine ring-2 ${ring} ring-offset-1 ring-offset-white`}>
         {children}
       </div>
-      <span className="text-[11px] font-bold text-blue-900">{label}</span>
+      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" data-testid={`label-${testid}`}>{label}</span>
     </div>
   );
   if (href) return <a href={href} target="_blank" rel="noreferrer">{inner}</a>;
@@ -373,9 +424,9 @@ function MarketCard({ m, onChart }) {
 
       {/* Top-right chart badge */}
       <button
-        onClick={onChart}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChart(); }}
         data-testid={`market-chart-${m.id}`}
-        className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-yellow-300 text-[9px] font-black hover:bg-white/15 active:scale-95 transition tracking-[0.15em]"
+        className="absolute top-3 right-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-400/95 backdrop-blur-sm border border-yellow-200 text-blue-950 text-[9px] font-black hover:bg-yellow-300 active:scale-95 transition tracking-[0.15em] shadow-lg"
         aria-label="View chart"
       >
         <BarChart3 className="w-3 h-3" strokeWidth={2.5} />

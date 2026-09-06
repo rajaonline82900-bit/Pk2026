@@ -63,11 +63,20 @@ export default function AdminSettings() {
           <Field label="Min Withdraw (points)" type="number" value={s.min_withdraw ?? 500} onSave={(v)=>save({ min_withdraw: parseInt(v) })} testid="min-wd" />
         </Card>
 
-        <Card title="Tutorial Videos (YouTube)">
-          <p className="text-xs text-slate-500 mb-3">YouTube link daalo — "How to Play" button click karne par users ko ye videos dikhayi jayengi.</p>
-          <Field label="How to Play — YouTube URL" value={s.youtube_how_to_play || ""} onSave={(v)=>save({ youtube_how_to_play: v })} testid="yt-play" />
-          <Field label="How to Deposit — YouTube URL" value={s.youtube_how_to_deposit || ""} onSave={(v)=>save({ youtube_how_to_deposit: v })} testid="yt-deposit" />
-          <Field label="How to Withdraw — YouTube URL" value={s.youtube_how_to_withdraw || ""} onSave={(v)=>save({ youtube_how_to_withdraw: v })} testid="yt-withdraw" />
+        <Card title="Tutorial Videos">
+          <p className="text-xs text-slate-500 mb-3">Video URL paste karo (YouTube ya direct .mp4 URL) — ya video file upload karo. Ye videos "How to Play" section me aur Deposit page pe inline play hongi.</p>
+          <VideoField label="How to Play — Video" value={s.youtube_how_to_play || ""} onSave={(v)=>save({ youtube_how_to_play: v })} testid="yt-play" />
+          <VideoField label="How to Deposit — Video" value={s.youtube_how_to_deposit || ""} onSave={(v)=>save({ youtube_how_to_deposit: v })} testid="yt-deposit" />
+          <VideoField label="How to Withdraw — Video" value={s.youtube_how_to_withdraw || ""} onSave={(v)=>save({ youtube_how_to_withdraw: v })} testid="yt-withdraw" />
+        </Card>
+
+        <Card title="Deposit Bonus">
+          <p className="text-xs text-slate-500 mb-3">Jab user ek particular amount ya usse jyada deposit kare, extra bonus wallet me automatically credit hota hai. Set 0 to disable.</p>
+          <Field label="Bonus Threshold (₹)" type="number" value={s.deposit_bonus_threshold ?? 2000} onSave={(v)=>save({ deposit_bonus_threshold: parseInt(v) || 0 })} testid="bonus-threshold" />
+          <Field label="Bonus % (extra)" type="number" value={s.deposit_bonus_percent ?? 5} onSave={(v)=>save({ deposit_bonus_percent: parseInt(v) || 0 })} testid="bonus-percent" />
+          <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mt-2">
+            Example: threshold ₹{s.deposit_bonus_threshold ?? 2000} & bonus {s.deposit_bonus_percent ?? 5}% — user ₹2000 deposit karta hai → +₹{Math.floor(((s.deposit_bonus_threshold ?? 2000) * (s.deposit_bonus_percent ?? 5)) / 100)} extra wallet me.
+          </div>
         </Card>
 
         <Card title="Refer & Earn">
@@ -188,6 +197,50 @@ function Field({ label, value, onSave, testid, type = "text" }) {
       <div className="flex gap-2 mt-1.5">
         <Input data-testid={`set-${testid}`} type={type} value={v} onChange={(e)=>setV(e.target.value)} className="flex-1" />
         <Button data-testid={`save-${testid}`} onClick={()=>onSave(v)} className="btn-brand h-10 px-4">Save</Button>
+      </div>
+    </div>
+  );
+}
+
+function VideoField({ label, value, onSave, testid }) {
+  const [v, setV] = useState(value);
+  const [uploading, setUploading] = useState(false);
+  useEffect(()=>setV(value), [value]);
+  const upload = async (file) => {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { toast.error("Max 25MB — smaller video daalo"); return; }
+    setUploading(true);
+    try {
+      const b64 = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const { data } = await api.post("/admin/upload", { data_url: b64, filename: file.name });
+      // Build API URL for the uploaded file
+      const backend = process.env.REACT_APP_BACKEND_URL || "";
+      const videoUrl = `${backend}/api/files/${data.id}/raw`;
+      setV(videoUrl);
+      onSave(videoUrl);
+      toast.success("Video uploaded — saved!");
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setUploading(false); }
+  };
+  return (
+    <div className="mb-4 border border-slate-200 rounded-lg p-3">
+      <Label className="text-xs uppercase tracking-wider text-slate-600 font-bold">{label}</Label>
+      <div className="flex gap-2 mt-1.5">
+        <Input data-testid={`set-${testid}`} type="text" value={v} onChange={(e)=>setV(e.target.value)} className="flex-1" placeholder="Paste YouTube URL or MP4 link" />
+        <Button data-testid={`save-${testid}`} onClick={()=>onSave(v)} className="btn-brand h-10 px-4">Save</Button>
+      </div>
+      <div className="flex items-center gap-2 mt-2">
+        <label className="text-[11px] font-semibold text-blue-700 hover:text-blue-900 cursor-pointer flex items-center gap-1">
+          <input type="file" accept="video/*" className="hidden" data-testid={`upload-${testid}`}
+            onChange={(e) => upload(e.target.files?.[0])} disabled={uploading} />
+          {uploading ? "Uploading…" : "📁 Or upload video file (≤ 25MB)"}
+        </label>
+        {value && <a href={value} target="_blank" rel="noreferrer" className="text-[11px] text-emerald-600 hover:underline">Preview →</a>}
       </div>
     </div>
   );

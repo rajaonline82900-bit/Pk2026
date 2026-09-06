@@ -23,8 +23,8 @@ DEFAULT_MARKETS = [
 
 async def seed_all(db):
     # ----- Admin -----
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@m11clube.com")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    admin_email = os.environ.get("ADMIN_EMAIL", "rajakhaiwal@85")
+    admin_password = os.environ.get("ADMIN_PASSWORD", "rajakhaiwal@85")
     existing = await db.users.find_one({"email": admin_email})
     if not existing:
         await db.users.insert_one({
@@ -38,8 +38,12 @@ async def seed_all(db):
             "status": "active",
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
-    elif not existing.get("id"):
-        await db.users.update_one({"email": admin_email}, {"$set": {"id": str(uuid.uuid4())}})
+    else:
+        # Always keep the admin credentials in sync with env / defaults
+        updates = {"password_hash": hash_password(admin_password)}
+        if not existing.get("id"):
+            updates["id"] = str(uuid.uuid4())
+        await db.users.update_one({"email": admin_email}, {"$set": updates})
 
     # ----- Test user -----
     test_mobile = "9999999999"
@@ -88,8 +92,10 @@ async def seed_all(db):
             "upi_id": "m11clube@upi",
             "upi_payee_name": "M11 CLUBE",
             "qr_code_url": "",
-            "min_deposit": 100,
+            "min_deposit": 300,
             "min_withdraw": 500,
+            "deposit_bonus_percent": 5,
+            "deposit_bonus_threshold": 2000,
             "withdraw_open_time": "08:00",
             "withdraw_close_time": "20:00",
             "result_api_url": "",
@@ -119,6 +125,9 @@ async def seed_all(db):
         new_rates = default_game_rates()
         if set(existing_rates.keys()) != set(new_rates.keys()):
             patch["game_rates"] = new_rates
+        # Force-update min_deposit if legacy default (100) is still there
+        if (settings.get("min_deposit") or 0) < 300:
+            patch["min_deposit"] = 300
         for k, v in [
             ("telegram_url", "https://t.me/m11clube"),
             ("withdraw_open_time", "08:00"),
@@ -136,6 +145,8 @@ async def seed_all(db):
             ("youtube_how_to_play", ""),
             ("youtube_how_to_deposit", ""),
             ("youtube_how_to_withdraw", ""),
+            ("deposit_bonus_percent", 5),
+            ("deposit_bonus_threshold", 2000),
             ("referral_first_deposit_percent", 10),
             ("referral_enabled", True),
             ("posters", [

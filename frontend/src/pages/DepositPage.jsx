@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import MobileLayout from "../components/layout/MobileLayout";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -7,23 +6,30 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { toast, Toaster } from "sonner";
-import { IndianRupee, X, CheckCircle2, Loader2 } from "lucide-react";
+import { IndianRupee, X, CheckCircle2, Loader2, Wallet as WalletIcon, Gift, PlayCircle } from "lucide-react";
+import { VideoPlayer } from "./Dashboard";
 
-const QUICK_AMOUNTS = [200, 500, 1000, 5000, 10000, 20000, 50000];
+const QUICK_AMOUNTS = [300, 500, 1000, 2000, 5000, 10000];
 
 export default function DepositPage() {
   const { user, refreshUser } = useAuth();
   const [amount, setAmount] = useState("");
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(false);
-  const [order, setOrder] = useState(null); // {order_id, payment_url, bhim_link, paytm_link, phonepe_link, amount}
+  const [order, setOrder] = useState(null);
+  const [videoOpen, setVideoOpen] = useState(false);
+
   useEffect(() => { api.get("/settings").then(({data}) => setSettings(data)); }, []);
 
   const num = parseInt(amount) || 0;
-  const min = settings.min_deposit ?? 100;
+  const min = settings.min_deposit ?? 300;
+  const bonusPct = settings.deposit_bonus_percent ?? 5;
+  const bonusThreshold = settings.deposit_bonus_threshold ?? 2000;
+  const bonusEligible = num >= bonusThreshold && bonusPct > 0;
+  const bonusAmount = bonusEligible ? Math.floor((num * bonusPct) / 100) : 0;
 
   const proceed = async () => {
-    if (num < min) return toast.error(`⚠️ Minimum deposit ₹${min} hai. Aapne ₹${num} daala — kam se kam ₹${min} daalo.`);
+    if (num < min) return toast.error(`⚠️ Minimum deposit ₹${min} hai.`);
     setLoading(true);
     try {
       const { data } = await api.post("/wallet/deposit/imb-create", { amount: num });
@@ -41,40 +47,97 @@ export default function DepositPage() {
   return (
     <MobileLayout>
       <Toaster richColors position="top-center" />
-      <div className="bg-gradient-to-br from-[#FF7A00] to-[#F5A623] text-white rounded-2xl p-5 mb-4">
-        <div className="text-[11px] uppercase tracking-widest opacity-80">Wallet Balance</div>
-        <div className="font-display font-bold text-4xl tabular-nums mt-1" data-testid="wallet-balance-display">{user?.wallet_balance ?? 0}</div>
-        <div className="text-xs opacity-80 mt-1">points</div>
+
+      {/* Wallet balance card — royal blue + gold theme */}
+      <div className="relative overflow-hidden rounded-2xl p-5 mb-4 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 border-2 border-yellow-400/50 shadow-xl" data-testid="wallet-card">
+        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-yellow-400/20 blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 w-24 h-24 rounded-full bg-indigo-500/20 blur-3xl" />
+        <div className="relative flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gold-gradient text-blue-950 flex items-center justify-center shadow-lg shrink-0">
+            <WalletIcon className="w-6 h-6" strokeWidth={2.5} />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-yellow-300 font-black">Wallet Balance</div>
+            <div className="font-display font-black text-4xl text-gold-shine tabular-nums leading-none mt-0.5" data-testid="wallet-balance-display">{user?.wallet_balance ?? 0}</div>
+            <div className="text-[11px] text-blue-200 mt-0.5">points</div>
+          </div>
+        </div>
       </div>
 
-      <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900 mb-3">Add Funds</h1>
+      {/* How to Deposit — inline video */}
+      <div className="rounded-2xl overflow-hidden border-2 border-emerald-400/50 bg-blue-950/70 shadow-xl mb-4" data-testid="how-to-deposit-card">
+        <div className="flex items-center gap-3 p-3 border-b border-emerald-400/25">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shrink-0">
+            <PlayCircle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-black text-white text-base leading-tight">How to Deposit</div>
+            <div className="text-[11px] text-emerald-200">Step-by-step video tutorial</div>
+          </div>
+          <button onClick={() => setVideoOpen(v => !v)} data-testid="toggle-deposit-video"
+            className="text-[10px] font-black tracking-widest bg-emerald-500 text-white px-3 py-1.5 rounded-full">
+            {videoOpen ? "HIDE" : "WATCH"}
+          </button>
+        </div>
+        {videoOpen && <VideoPlayer url={settings.youtube_how_to_deposit} testid="deposit-video" />}
+      </div>
+
+      {/* Deposit bonus strip */}
+      {bonusPct > 0 && (
+        <div className="mb-3 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 text-blue-950 px-4 py-2.5 flex items-center gap-2 font-black shadow-lg border border-yellow-200" data-testid="bonus-hint">
+          <Gift className="w-4 h-4" />
+          <span className="text-sm">₹{bonusThreshold}+ deposit karo, paayo {bonusPct}% bonus wallet me!</span>
+        </div>
+      )}
+
+      <h1 className="font-display font-black text-2xl tracking-tight text-slate-900 mb-3">Add Funds</h1>
 
       <div className="bg-white border border-slate-200 rounded-xl p-4" data-testid="deposit-form">
         <Label className="text-xs uppercase tracking-wider text-slate-600">Select Amount</Label>
-        <div className="grid grid-cols-4 gap-2 mt-1.5 mb-3" data-testid="quick-amounts">
-          {QUICK_AMOUNTS.map(a => (
-            <button key={a} onClick={() => setAmount(String(a))} data-testid={`qa-${a}`}
-              className={`text-sm font-semibold py-2 rounded-md border transition tabular-nums ${num === a ? "bg-[#FF7A00] text-white border-[#FF7A00]" : "bg-white text-slate-700 border-slate-200 hover:border-[#FF7A00] hover:text-[#FF7A00]"}`}>
-              {a >= 1000 ? `${a/1000}K` : a}
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-2 mt-1.5 mb-3" data-testid="quick-amounts">
+          {QUICK_AMOUNTS.map(a => {
+            const willBonus = a >= bonusThreshold && bonusPct > 0;
+            return (
+              <button key={a} onClick={() => setAmount(String(a))} data-testid={`qa-${a}`}
+                className={`relative text-sm font-bold py-3 rounded-xl border-2 transition tabular-nums ${num === a
+                  ? "bg-gradient-to-br from-blue-800 to-blue-950 text-yellow-300 border-yellow-400 shadow-lg"
+                  : "bg-white text-slate-800 border-slate-200 hover:border-yellow-400 hover:text-blue-900"}`}>
+                ₹{a.toLocaleString("en-IN")}
+                {willBonus && (
+                  <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">+{bonusPct}%</span>
+                )}
+              </button>
+            );
+          })}
         </div>
+
         <Label className="text-xs uppercase tracking-wider text-slate-600">Or enter custom amount</Label>
         <div className="relative mt-1.5">
           <IndianRupee className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
           <Input data-testid="deposit-amount" inputMode="numeric" value={amount} onChange={(e)=>setAmount(e.target.value.replace(/\D/g,""))} className="pl-9 h-11 text-base font-semibold" placeholder={`Minimum ${min}`} />
         </div>
 
-        {/* Live red-blinking warning when amount below minimum */}
+        {/* Bonus applied banner */}
+        {bonusEligible && (
+          <div className="mt-3 rounded-xl bg-gradient-to-r from-emerald-50 to-green-100 border-2 border-emerald-400 p-3 flex items-center gap-2" data-testid="bonus-applied">
+            <Gift className="w-5 h-5 text-emerald-700" />
+            <div className="flex-1 text-sm">
+              <span className="font-black text-emerald-800">🎁 Bonus applied!</span> <span className="text-emerald-700">₹{bonusAmount} extra wallet me add ho jayega.</span>
+            </div>
+          </div>
+        )}
+
         {num > 0 && num < min && (
           <div data-testid="min-deposit-warning" className="mt-3 blink-red border-2 rounded-xl p-3 font-bold text-center text-sm" style={{ fontFamily: '"Noto Sans Devanagari", system-ui, sans-serif' }}>
             ⚠️ न्यूनतम जमा ₹{min} है — आपने ₹{num} डाला है। कृपया कम से कम ₹{min} डालें।
           </div>
         )}
 
-        <Button data-testid="deposit-submit" onClick={proceed} disabled={loading || num < min} className="w-full mt-4 h-12 btn-brand text-base font-semibold disabled:opacity-50">
+        <Button data-testid="deposit-submit" onClick={proceed} disabled={loading || num < min}
+          className="w-full mt-4 h-12 text-base font-black tracking-wider disabled:opacity-50"
+          style={{ background: "linear-gradient(180deg, #fde047 0%, #f59e0b 100%)", color: "#0c1e5e" }}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {loading ? "Creating order…" : `Proceed to Pay ${num >= min ? `₹${num}` : ""}`}
+          {loading ? "Creating order…" : `PROCEED TO PAY ${num >= min ? `₹${num}` : ""}${bonusEligible ? ` (+₹${bonusAmount})` : ""}`}
         </Button>
 
         <div className="mt-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 border border-rose-200 p-3.5" data-testid="screenshot-warning-pre">
@@ -101,12 +164,11 @@ export default function DepositPage() {
 }
 
 function ImbPaymentOverlay({ order, onDone, onClose }) {
-  const [status, setStatus] = useState("waiting"); // waiting, completed, failed
-  const [secondsLeft, setSecondsLeft] = useState(420); // 7-min payment window
+  const [status, setStatus] = useState("waiting");
+  const [secondsLeft, setSecondsLeft] = useState(420);
   const pollRef = useRef(null);
   const closedRef = useRef(false);
 
-  // Prevent accidental refresh / back nav
   useEffect(() => {
     const onBefore = (e) => { e.preventDefault(); e.returnValue = ""; };
     window.addEventListener("beforeunload", onBefore);
@@ -124,7 +186,6 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
     };
   }, [status]);
 
-  // Status polling every 4s
   useEffect(() => {
     pollRef.current = setInterval(async () => {
       try {
@@ -143,7 +204,6 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
     return () => clearInterval(pollRef.current);
   }, [order.order_id, onDone]);
 
-  // Countdown
   useEffect(() => {
     if (status !== "waiting") return;
     const id = setInterval(() => setSecondsLeft(s => Math.max(0, s - 1)), 1000);
@@ -196,7 +256,6 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
         </div>
       ) : (
         <div className="flex-1 bg-white overflow-y-auto" data-testid="imb-waiting">
-          {/* IMPORTANT screenshot warning */}
           <div className="px-4 pt-3 pb-3 bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 border-b-2 border-rose-200" data-testid="screenshot-warning">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-rose-200 animate-pulse">
@@ -209,7 +268,6 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
             </div>
           </div>
 
-          {/* Embedded IMB payment page — only this is visible during payment */}
           {order.payment_url ? (
             <iframe
               src={order.payment_url}
@@ -233,4 +291,3 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
     </div>
   );
 }
-

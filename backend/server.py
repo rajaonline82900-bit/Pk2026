@@ -225,6 +225,13 @@ class SettingsIn(BaseModel):
     imb_base_url: Optional[str] = None
     posters: Optional[List[dict]] = None
     game_rates: Optional[dict] = None
+    # Tutorial videos (YouTube URL or direct MP4 URL — rendered inline)
+    youtube_how_to_play: Optional[str] = None
+    youtube_how_to_deposit: Optional[str] = None
+    youtube_how_to_withdraw: Optional[str] = None
+    # Deposit bonus: award X% extra if deposit amount >= threshold
+    deposit_bonus_percent: Optional[int] = None
+    deposit_bonus_threshold: Optional[int] = None
 
 
 class IMBCreateOrderIn(BaseModel):
@@ -765,7 +772,7 @@ async def passbook(user: dict = Depends(get_current_user), limit: int = 200):
 @api.post("/wallet/deposit")
 async def request_deposit(payload: DepositIn, user: dict = Depends(get_current_user)):
     settings = await db.settings.find_one({"key": "global"}) or {}
-    min_d = settings.get("min_deposit", 100)
+    min_d = settings.get("min_deposit", 300)
     if payload.amount < min_d:
         raise HTTPException(400, f"⚠️ Minimum deposit ₹{min_d} hai. Aapne ₹{payload.amount} daala — kam se kam ₹{min_d} daalo.")
     tid = str(uuid.uuid4())
@@ -1365,6 +1372,11 @@ async def admin_transaction_action(payload: TransactionApproveIn, _: dict = Depe
             await db.users.update_one({"id": t["user_id"]}, {"$inc": {"wallet_balance": t["amount"]}})
             await db.transactions.update_one({"id": payload.transaction_id}, {"$set": {"status": "approved", "admin_note": payload.admin_note}})
             await db.notifications.insert_one({"id": str(uuid.uuid4()), "user_id": t["user_id"], "title": "Deposit approved", "body": f"{t['amount']} points added to your wallet.", "created_at": now_iso()})
+            # Apply deposit bonus if applicable
+            try:
+                await _apply_deposit_bonus(t["user_id"], int(t["amount"]), t["id"])
+            except Exception:
+                pass
         else:
             await db.transactions.update_one({"id": payload.transaction_id}, {"$set": {"status": "rejected", "admin_note": payload.admin_note}})
             await db.notifications.insert_one({"id": str(uuid.uuid4()), "user_id": t["user_id"], "title": "Deposit rejected", "body": payload.admin_note or "Your deposit was rejected.", "created_at": now_iso()})
@@ -1419,9 +1431,9 @@ async def admin_upload(payload: UploadIn, _: dict = Depends(require_admin)):
     data = payload.data_url
     if not data:
         raise HTTPException(400, "Empty payload")
-    # Accept ~3MB max to avoid bloating Mongo docs
-    if len(data) > 4_500_000:
-        raise HTTPException(413, "File too large (max ~3MB)")
+    # Accept ~25MB max (data URL base64 is ~1.37× the raw file size)
+    if len(data) > 35_000_000:
+        raise HTTPException(413, "File too large (max ~25MB)")
     fid = str(uuid.uuid4())
     await db.files.insert_one({
         "id": fid,
@@ -1439,6 +1451,25 @@ async def get_file_redirect(file_id: str):
     if not f:
         raise HTTPException(404, "File not found")
     return {"id": file_id, "data_url": f["data_url"], "filename": f.get("filename")}
+
+
+@api.get("/files/{file_id}/raw")
+async def get_file_raw(file_id: str):
+    """Return the file bytes directly with proper Content-Type (usable as <video src>, <img src>)."""
+    import base64
+    from fastapi.responses import Response
+    f = await db.files.find_one({"id": file_id})
+    if not f:
+        raise HTTPException(404, "File not found")
+    data_url = f.get("data_url", "")
+    # Expect format: data:<mime>;base64,<payload>
+    try:
+        header, payload = data_url.split(",", 1)
+        mime = header.split(":")[1].split(";")[0] if ":" in header else "application/octet-stream"
+        raw = base64.b64decode(payload)
+    except Exception:
+        raise HTTPException(500, "Invalid file storage format")
+    return Response(content=raw, media_type=mime, headers={"Cache-Control": "public, max-age=604800"})
 
 
 # ---------- UPI Intent / Deposit helper ----------
@@ -1466,11 +1497,11 @@ async def imb_create_order(payload: IMBCreateOrderIn, user: dict = Depends(get_c
     token = (s.get("imb_user_token") or "").strip()
     if not token:
         raise HTTPException(503, "Payment gateway not configured. Ask admin to set IMB API key.")
-    min_d = s.get("min_deposit", 100)
+    min_d = s.get("min_deposit", 300)
     if payload.amount < min_d:
         raise HTTPException(400, f"Minimum deposit is {min_d} points")
 
-    order_id = f"M11{int(datetime.now(timezone.utc).timestamp())}{uuid.uuid4().hex[:6].upper()}"
+    order_id = f"RK{int(datetime.now(timezone.utc).timestamp())}{uuid.uuid4().hex[:6].upper()}"
     redirect_url = os.environ.get("PUBLIC_APP_URL", "https://m11clube.app") + "/funds?paid=1"
     body = {
         "customer_mobile": user.get("mobile") or "9999999999",
@@ -1585,6 +1616,38 @@ async def _credit_referrer_if_first_deposit(user_id: str, deposit_amount: int):
     })
 
 
+async def _apply_deposit_bonus(user_id: str, deposit_amount: int, source_txn_id: str) -> int:
+    """If deposit_amount >= threshold, credit `deposit_bonus_percent`% extra to wallet
+    and record a `deposit_bonus` transaction. Returns bonus credited (0 if none)."""
+    settings = await db.settings.find_one({"key": "global"}) or {}
+    threshold = int(settings.get("deposit_bonus_threshold") or 0)
+    pct = int(settings.get("deposit_bonus_percent") or 0)
+    if threshold <= 0 or pct <= 0 or deposit_amount < threshold:
+        return 0
+    bonus = int(deposit_amount * pct / 100)
+    if bonus <= 0:
+        return 0
+    await db.users.update_one({"id": user_id}, {"$inc": {"wallet_balance": bonus}})
+    await db.transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "deposit_bonus",
+        "amount": bonus,
+        "status": "approved",
+        "note": f"Deposit bonus ({pct}%) on ₹{deposit_amount} deposit",
+        "source_transaction_id": source_txn_id,
+        "created_at": now_iso(),
+    })
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "title": "🎁 Deposit Bonus!",
+        "body": f"You got {bonus} pts extra ({pct}% bonus) on ₹{deposit_amount} deposit.",
+        "created_at": now_iso(),
+    })
+    return bonus
+
+
 async def _imb_credit_if_pending(order_id: str, gw_payload: dict):
     """Idempotently credit the user wallet for a completed IMB order."""
     t = await db.transactions.find_one({"imb_order_id": order_id})
@@ -1599,6 +1662,11 @@ async def _imb_credit_if_pending(order_id: str, gw_payload: dict):
     # Award referral bonus on first deposit
     try:
         await _credit_referrer_if_first_deposit(t["user_id"], amount)
+    except Exception:
+        pass
+    # Award deposit bonus if amount >= configured threshold
+    try:
+        await _apply_deposit_bonus(t["user_id"], amount, t["id"])
     except Exception:
         pass
     await db.notifications.insert_one({
