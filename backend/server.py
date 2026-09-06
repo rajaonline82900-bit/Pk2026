@@ -1534,9 +1534,9 @@ async def imb_check_status(body: dict, user: dict = Depends(get_current_user)):
             data = r.json()
     except Exception as e:
         raise HTTPException(502, f"Status check failed: {e}")
-    status = (data.get("status") or "").upper()
+    order_status = (data.get("status") or "").upper()
     # If completed and not yet credited, credit now
-    if status in ("COMPLETED", "SUCCESS") and (data.get("result") or {}).get("txnStatus") == "COMPLETED":
+    if order_status in ("COMPLETED", "SUCCESS") and (data.get("result") or {}).get("txnStatus") == "COMPLETED":
         await _imb_credit_if_pending(order_id, data)
     # Reflect updated wallet/status to caller
     txn = await db.transactions.find_one({"imb_order_id": order_id})

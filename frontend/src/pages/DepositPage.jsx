@@ -234,12 +234,3 @@ function ImbPaymentOverlay({ order, onDone, onClose }) {
   );
 }
 
-function _UpiAppRemoved({ href, label, testid }) {
-  return (
-    <a href={href} className="text-center bg-slate-50 border border-slate-200 hover:border-[#FF7A00] hover:bg-orange-50 transition rounded-lg p-3 text-xs font-semibold text-slate-700"
-      data-testid={testid}>
-      <Smartphone className="w-5 h-5 mx-auto mb-1 text-[#FF7A00]" />
-      {label}
-    </a>
-  );
-}
