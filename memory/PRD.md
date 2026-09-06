@@ -1,87 +1,68 @@
-# M11 CLUBE — Product Requirements (v3 — Pro Features)
+# Raja Khaiwal (formerly M11 CLUBE) — PRD
 
 ## Original Problem Statement
-Build "M11 CLUBE" — a Matka web app with Admin Panel, IMB Payment Gateway,
-multi-language support, and Hostinger VPS deployment.
+Build a complete, responsive Matka Web Application with a powerful Admin Panel. Deploy to Hostinger Ubuntu VPS at `rajakhaiwal.in` (IP: 187.127.159.199).
 
-## ✅ COMPLETED
+**User's preferred language**: Hindi.
 
-### Phase 1 — Initial Build
-- React + FastAPI + MongoDB stack with mobile+password auth
-- IMB Payment Gateway with overlay scanner
-- Hostinger VPS deployed at https://m11cloube.com
+## Product Requirements
+- Core: Dashboard, Market List, Sidebar Nav, Bottom Nav
+- Bidding: Jodi Bet, Haruf (Andar/Bahar), Cross Bet
+- Admin: Manage users, 6 markets, declare/reverse results, Jantri, payments, settings, Recently Joined Users
+- Payment: IMB Gateway (`api.imbpay.in`)
+- Auth: Mobile + password (Signup-first), 1-year token
+- Aesthetics: Royal Blue + Gold premium casino theme, NFT-style market cards
+- Branding: **RAJA KHAIWAL** (logo: gold crown on royal blue background)
 
-### Phase 2 — Game Redesign (Feb 19)
-- Removed all old game types
-- 3 new games: Jodi (1:100), Haruf (1:10), Cross Bet (1:100)
-- Admin: simplified result entry + new JANTRI Report
-- Raj Shree style UI
+## Tech Stack
+- Frontend: React + CRA + Tailwind + shadcn/ui
+- Backend: FastAPI + Motor + MongoDB
+- Deployment: Hostinger VPS, Nginx, PM2, Certbot SSL, Cloudflare DNS
 
-### Phase 3 — Pro Features (Feb 19, continued)
-- **Haruf Andar/Bahar SWAPPED**: Andar = pehla digit, Bahar = doosra digit (jodi 12 → Andar=1, Bahar=2)
-- **How to Play modal**: 3 options (Play/Deposit/Withdraw) opens YouTube videos
-- **Admin YouTube link inputs** in Settings → Tutorial Videos card
-- **Refer & Earn** page: code generation, 10% first-deposit bonus, WhatsApp share, stats
-- **Result History modal** on market chart icon click
-- **TIME OUT** red gradient button (replaces "Closed" text)
-- **Cross Bet** mode toggle: With Jodi (incl. 11,22,33) / Jod Cut (no pairs)
-- **Admin Result by date**: date picker, declare for any past date
-- **Admin Reverse Result**: now date-aware (already worked)
-- **Colorful gradient UI**: Pink/teal/sky/orange action buttons, gradient market cards, gradient banners
+## Environment Variables (Backend)
+- `JWT_SECRET` (required — NOT `SECRET_KEY`)
+- `MONGO_URL`, `DB_NAME`
+- `PUBLIC_APP_URL`, `CORS_ORIGINS`
 
-### Phase 4 — UI Pulse (Feb 26)
-- **Bottom Nav**: "Fund" → **Refer & Earn** icon
-- **Top 4 Brand Actions**: Real-brand icons — Deposit (₹+ green), Withdrawal (₹↓ rose), Telegram (official paper-plane sky-blue #229ED9), WhatsApp (official glyph green #25D366)
-- ~~Live Countdown Timer above PLAY~~ — REMOVED per user request
+## Deployment Status (as of Feb 2026)
+- ✅ VPS setup complete on `rajakhaiwal.in`
+- ✅ `JWT_SECRET` env var fixed (previously typoed as `SECRET_KEY`)
+- ✅ Backend live at `https://rajakhaiwal.in/api/*` — HTTP 200
+- ✅ Auth (signup/login) verified working via curl
+- ✅ Frontend built & deployed (Emergent badge removed)
+- ✅ Full rebrand: M11 CLUBE → RAJA KHAIWAL (all pages + meta tags)
+- ✅ Login/Register pages redesigned — Royal Blue + Gold theme with pill toggle, glowing crown logo, Hindi CTA text
 
-### Phase 4.1 — Hotfix (Feb 26)
-- **Admin Result Declaration white-page FIXED**: `setLastDeclare({ ...data, market: selectedMarket?.name, date, result })` — spreading API `data` first prevents its `market` (object) from overriding the string and crashing React render. Verified by testing agent.
+## Login/Register Redesign (Feb 2026)
+- Dark royal blue radial gradient background with pattern grid + gold glow orb
+- Circular Raja Khaiwal logo with yellow ring + gold shadow glow
+- Brand title "RAJA KHAIWAL" + "ROYAL" pill + "Official Gaming & Bidding Network" tagline pill
+- Pill toggle tabs: LOGIN / REGISTRATION (gold gradient active)
+- Dark glass-morphism card with 4 rounded pill inputs (gold icons, dark bg, yellow focus)
+- Gold gradient CTA buttons with drop-shadow glow
+- Hindi footer: "खाता नहीं है? नया अकाउंट बनाएं" / "पहले से खाता है? लॉगिन करें"
+- Green "Contact 24/7 Helpline" pill with pulse dot
 
-### Phase 5 — Payment Gateway Migration (Feb 26)
-- **IMB → IMBPAY**: Switched payment gateway from `https://secure-stage.imb.org.in/` to **`https://api.imbpay.in`** (LIVE) with new `user_token = d4d55d42e4f941876ece095ce8afe50c` (Merchant: "Raja online khaiwal")
-- Settings updated in DB + code defaults updated in `server.py` (3 places)
-- End-to-end verified: create-order returns valid `payment_url` (v2-api.newqr.info), `paytm_link`, `bhim_link`, `check_link` — 8/8 backend tests passed (iteration_5.json)
-- Webhook (`/api/webhooks/imb`) unchanged — still handles auto-credit on payment success
-
-
-### Backend APIs added
-- `GET /api/users/me/referral` — returns code + stats
-- `GET /api/markets/{id}/result-history` — last 60 results (public)
-- `POST /api/admin/markets/{id}/result` — now accepts `date` field
-- `POST /api/auth/register` — now accepts `referral_code`
-- IMB webhook → auto-credits referrer 10% on first deposit (idempotent)
-
-### Frontend pages created/updated
-- `pages/Dashboard.jsx` — gradient buttons, How-to-Play modal, chart icon → history modal, TIME OUT button
-- `pages/ReferEarn.jsx` (new) — full refer & earn page
-- `pages/Register.jsx` — `?ref=CODE` param + referral code input
-- `pages/games/HarufPage.jsx` — Andar/Bahar swapped, colorful gradient headers
-- `pages/games/CrossBetPage.jsx` — With Jodi / Jod Cut toggle
-- `pages/admin/AdminResults.jsx` — date picker
-- `pages/admin/AdminJantri.jsx` — JANTRI Report (Phase 2)
-- `pages/admin/AdminSettings.jsx` — YouTube + Referral % cards
-- `components/layout/MobileLayout.jsx` — drawer: "Refer & Earn"
-
-### Backend files
-- `server.py` — referral logic, result-history, date-aware result declaration, Haruf swap
-- `game_logic.py` — Haruf swapped, docstring updated
-- `seed.py` — new settings keys (youtube_*, referral_*)
+## Files of Reference
+- `/app/frontend/public/brand/raja-khaiwal-logo.png` — brand logo
+- `/app/frontend/src/pages/Login.jsx` — redesigned auth
+- `/app/frontend/src/pages/Register.jsx` — redesigned auth
+- `/app/frontend/src/components/layout/MobileLayout.jsx` — header + drawer
+- `/app/backend/server.py` — reads `JWT_SECRET` from env
+- `/app/backend/seed.py` — market + admin seed
 
 ## Test Credentials
-See `/app/memory/test_credentials.md`
+- Admin: `admin@m11clube.com` / `Vikram@2675` (VPS) or `admin123` (default seed)
+- User: `7777777777` / `1234` OR `9999999911` / `1234`
 
-## Verified flows
-- 5-bid mixed test → ₹8500 paid out correctly (math verified)
-- Haruf logic: jodi 12 → haruf_andar=1 ✓, haruf_andar=2 ✗, haruf_bahar=2 ✓ (curl test)
-- Referral code generation working (`M1111CDAF` example)
-- Result history endpoint returns array
-- Frontend screenshots verified: Dashboard, MarketDetail, Jodi grid, Haruf w/ swap, Refer & Earn page
+## Backlog / Future
+- APK source (Kotlin) URL update to `rajakhaiwal.in`
+- Update admin email to `admin@rajakhaiwal.in`
+- Update UPI payee name from "M11 CLUBE" → "Raja Khaiwal" in seed.py (currently frontend rebranded but backend seed still has old name for QR gen)
+- Cleanup monolithic deployment scripts
 
-## P0 / P1 / P2 Backlog
-- **P1**: Push to GitHub + VPS redeploy
-- **P1**: Admin sets YouTube links in `/admin/settings`
-- **P1**: Admin sets IMB webhook URL to `https://m11cloube.com/api/webhooks/imb`
-- **P2**: Custom game types add/delete via admin (currently 3 hardcoded — can extend)
-- **P2**: Translation strings for new pages (Refer & Earn, How to Play)
-- **P2**: Telegram bot notifications
-- **P3**: Switch IMB STAGE → LIVE
+## Known Recurring Fixes
+- **502 on VPS after fresh deploy**: Always check `.env` has `JWT_SECRET=` (not `SECRET_KEY=`). Fix with:
+  ```
+  sed -i 's/^SECRET_KEY=/JWT_SECRET=/' /var/www/m11clube/backend/.env && pm2 restart m11-api --update-env
+  ```

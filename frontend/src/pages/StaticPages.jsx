@@ -130,7 +130,7 @@ export function IdeaPage() {
       <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900 mb-3">Submit an Idea</h1>
       <div className="bg-white border border-slate-200 rounded-xl p-4">
         <Lightbulb className="w-6 h-6 text-amber-500 mb-2" />
-        <textarea data-testid="idea-text" value={text} onChange={(e) => setText(e.target.value)} rows={6} className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#FF7A00] focus:outline-none" placeholder="Share your ideas to improve M11 CLUBE…" />
+        <textarea data-testid="idea-text" value={text} onChange={(e) => setText(e.target.value)} rows={6} className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#FF7A00] focus:outline-none" placeholder="Share your ideas to improve Raja Khaiwal…" />
         <button data-testid="idea-submit" onClick={send} className="w-full btn-brand h-11 rounded-lg mt-3">Submit</button>
       </div>
     </MobileLayout>
@@ -178,7 +178,7 @@ function SettingsPageImpl() {
 export function SharePage() {
   const link = window.location.origin;
   const copy = async () => {
-    await navigator.clipboard.writeText(`Play Matka on M11 CLUBE — get ₹50 welcome bonus! ${link}`);
+    await navigator.clipboard.writeText(`Play Matka on Raja Khaiwal — get ₹50 welcome bonus! ${link}`);
     alert("Invite copied!");
   };
   return (
@@ -187,7 +187,7 @@ export function SharePage() {
       <div className="bg-gradient-to-br from-[#FF7A00] to-[#F5A623] text-white rounded-2xl p-5">
         <Share2 className="w-10 h-10 mb-3" />
         <div className="font-display font-bold text-xl tracking-tight">Refer & Earn</div>
-        <div className="text-sm opacity-90 mt-1">Share M11 CLUBE with friends and earn rewards on every signup.</div>
+        <div className="text-sm opacity-90 mt-1">Share Raja Khaiwal with friends and earn rewards on every signup.</div>
         <button data-testid="share-copy" onClick={copy} className="mt-4 bg-white text-[#FF7A00] font-semibold px-4 py-2.5 rounded-lg w-full">Copy Invite Link</button>
       </div>
     </MobileLayout>

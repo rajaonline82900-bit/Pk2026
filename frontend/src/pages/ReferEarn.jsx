@@ -13,7 +13,7 @@ export default function ReferEarn() {
   const shareUrl = data?.referral_code
     ? `${window.location.origin}/login?ref=${data.referral_code}`
     : "";
-  const shareText = `🎰 M11 CLUBE join karo aur jeeto bada! Mere referral code "${data?.referral_code}" se signup karke pehli deposit karo. Link: ${shareUrl}`;
+  const shareText = `🎰 Raja Khaiwal join karo aur jeeto bada! Mere referral code "${data?.referral_code}" se signup karke pehli deposit karo. Link: ${shareUrl}`;
 
   const copyCode = () => {
     if (!data?.referral_code) return;
@@ -26,7 +26,7 @@ export default function ReferEarn() {
   const shareNow = async () => {
     if (navigator.share && shareUrl) {
       try {
-        await navigator.share({ title: "M11 CLUBE", text: shareText, url: shareUrl });
+        await navigator.share({ title: "Raja Khaiwal", text: shareText, url: shareUrl });
       } catch (e) {/* user cancelled */}
     } else {
       navigator.clipboard.writeText(shareText);

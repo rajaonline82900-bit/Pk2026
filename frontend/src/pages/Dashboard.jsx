@@ -88,7 +88,7 @@ export default function Dashboard() {
 
       <div className="text-center text-xs text-slate-400 mt-6 mb-2 flex items-center justify-center gap-1">
         <Crown className="w-3 h-3 text-yellow-500" />
-        <span>Powered by M11 CLUBE · Play Responsibly</span>
+        <span>Powered by Raja Khaiwal · Play Responsibly</span>
         <Crown className="w-3 h-3 text-yellow-500" />
       </div>
 
@@ -99,7 +99,7 @@ export default function Dashboard() {
             <div className="inline-flex items-center gap-2 bg-gold-gradient text-blue-900 px-4 py-1.5 rounded-full text-xs font-bold mb-2">
               <Youtube className="w-4 h-4" /> TUTORIALS
             </div>
-            <div className="font-display font-black text-2xl text-blue-900">How to use M11 CLUBE</div>
+            <div className="font-display font-black text-2xl text-blue-900">How to use Raja Khaiwal</div>
             <div className="text-xs text-slate-600 mt-1">Choose a topic to watch the tutorial</div>
           </div>
           <div className="space-y-3">

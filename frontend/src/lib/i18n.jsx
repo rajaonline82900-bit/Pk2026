@@ -1,4 +1,4 @@
-// Minimal i18n for M11 CLUBE — 4 languages.
+// Minimal i18n for Raja Khaiwal — 4 languages.
 // Keys are stable; missing translations fall back to English.
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 

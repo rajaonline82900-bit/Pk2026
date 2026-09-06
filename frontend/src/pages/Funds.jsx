@@ -50,7 +50,7 @@ export default function Funds() {
 function buildUpiUrl({ upi_id, payee, amount, note }) {
   const params = new URLSearchParams({
     pa: upi_id,
-    pn: payee || "M11 CLUBE",
+    pn: payee || "Raja Khaiwal",
     am: String(amount),
     cu: "INR",
     tn: note || "Deposit",
@@ -64,7 +64,7 @@ function DepositForm({ settings, onDone }) {
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
   const upi = settings.upi_id || "m11clube@upi";
-  const payee = settings.upi_payee_name || "M11 CLUBE";
+  const payee = settings.upi_payee_name || "Raja Khaiwal";
   const min = settings.min_deposit || 100;
   const num = parseInt(amount) || 0;
 

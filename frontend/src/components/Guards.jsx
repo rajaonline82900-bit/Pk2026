@@ -22,7 +22,7 @@ function LoadingShell() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="text-center">
-        <div className="text-2xl font-display font-bold text-slate-900 tracking-tight">M11 CLUBE</div>
+        <div className="text-2xl font-display font-bold text-yellow-300 tracking-tight">RAJA KHAIWAL</div>
         <div className="text-xs uppercase tracking-widest text-slate-400 mt-2">Loading…</div>
       </div>
     </div>

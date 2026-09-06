@@ -55,7 +55,7 @@ export default function MobileLayout({ children, hideBottomNav }) {
                     <div className="w-16 h-16 mx-auto rounded-2xl bg-gold-gradient text-blue-900 flex items-center justify-center font-display font-black text-2xl mb-2 shadow-xl">
                       <Crown className="w-8 h-8" strokeWidth={2.5} />
                     </div>
-                    <div className="font-display font-black text-xl tracking-tight text-gold-shine">M11 CLUBE</div>
+                    <div className="font-display font-black text-xl tracking-tight text-gold-shine">RAJA KHAIWAL</div>
                     <div className="mt-2 text-xs opacity-90" data-testid="drawer-user-name">{user?.name || "Player"}</div>
                     {user?.mobile && <div className="text-xs opacity-80" data-testid="drawer-user-mobile">+91 {user.mobile}</div>}
                     <div className="mt-3 inline-flex items-center gap-2 bg-gold-gradient text-blue-900 px-4 py-1.5 rounded-full shadow-lg font-bold">
@@ -90,7 +90,7 @@ export default function MobileLayout({ children, hideBottomNav }) {
             </Sheet>
             <Link to="/" className="flex items-center gap-2">
               <Crown className="w-6 h-6 text-yellow-400" fill="currentColor" />
-              <span className="font-display font-black text-xl tracking-tight text-gold-shine">M11 CLUBE</span>
+              <span className="font-display font-black text-xl tracking-tight text-gold-shine">RAJA KHAIWAL</span>
             </Link>
           </div>
           <Link

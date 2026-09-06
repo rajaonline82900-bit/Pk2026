@@ -34,7 +34,7 @@ export default function AdminLogin() {
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <div className="font-display font-bold text-lg tracking-tight text-slate-900">M11 CLUBE</div>
+            <div className="font-display font-bold text-lg tracking-tight text-slate-900">RAJA KHAIWAL</div>
             <div className="text-[11px] uppercase tracking-widest text-slate-400">Admin Console</div>
           </div>
         </div>
